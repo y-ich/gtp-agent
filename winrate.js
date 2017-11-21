@@ -2,7 +2,7 @@
 const os = require('os');
 const jssgf = require('jssgf');
 const { GtpLeela, coord2move } = require('gtp-wrapper');
-const { RetryDDP } = require('./retry-ddp.js');
+const { DDPPlus } = require('ddp-plus');
 
 const BYOYOMI = 28800; // 8時間。事実上の無限大。
 const MIMIAKA_SERVER = process.env.NODE_ENV === 'production' ?
@@ -218,8 +218,8 @@ if (require.main === module) {
         console.log('uncaughtException: ', err);
     });
 
-    const ddp = new RetryDDP({ url: MIMIAKA_SERVER });
-    const client = new LeelaClient(ddp.ddp, parseInt(process.argv[2] || '1'));
+    const ddp = new DDPPlus({ url: MIMIAKA_SERVER });
+    const client = new LeelaClient(ddp, parseInt(process.argv[2] || '1'));
     ddp.on('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.destroy();
@@ -229,5 +229,5 @@ if (require.main === module) {
     ddp.on('connect-error', async function(error) {
         await client.destroy();
     });
-    ddp.start();
+    ddp.connectWithRetry(1000, 60000);
 }

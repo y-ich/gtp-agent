@@ -3,7 +3,7 @@ const os = require('os');
 const jssgf = require('jssgf');
 const DDPClient = require('ddp');
 const { coord2move, move2coord, GtpClient } = require('gtp-wrapper');
-const { sleep, ddpCallPromise } = require('./util.js');
+const { sleep } = require('./util.js');
 const { didGreet, isIn } = require('./helpers.js');
 
 const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
@@ -136,7 +136,7 @@ class Agent {
             console.log('already playing other game', this.roomId, id);
             return false;
         }
-        if (await ddpCallPromise(this.ddp, 'room.enter', [id, true])) {
+        if (await this.ddp.call('room.enter', [id, true])) {
             this.roomId = id;
             const room = this.ddp.collections.rooms[this.roomId];
             this.color = room.black === this.id ? 'B' : 'W';
@@ -152,7 +152,7 @@ class Agent {
     async exitRoom() {
         await this.stopObserveRoom();
         chat.disableChat(this.roomId);
-        await ddpCallPromise(this.ddp, 'room.exit', [this.roomId, true]);
+        await this.ddp('room.exit', [this.roomId, true]);
         this.roomId = null;
         this.state = null;
         this.observeRooms();
@@ -167,7 +167,7 @@ class Agent {
         if (!(newFields && newFields.twiigo && newFields.twiigo.request)) {
             return null;
         }
-        const roomId = await ddpCallPromise(this.ddp, 'room.make', [this.id]);
+        const roomId = await this.ddp.call('room.make', [this.id]);
         await this.enterRoom(roomId);
     }
 
@@ -260,7 +260,7 @@ class Agent {
             }
         }
         try {
-            await ddpCallPromise(this.ddp, 'room.updateGame', [this.roomId, jssgf.stringify([root])]);
+            await this.ddp.call('room.updateGame', [this.roomId, jssgf.stringify([root])]);
         } catch (e) {
             this.state = this.ERROR;
             console.log(e);
@@ -304,7 +304,7 @@ class Agent {
             if (isIn(room, opponentId)) { // 相手が部屋に居れば
                 this.state = this.START_GREETING;
                 await sleep(3000);
-                await ddpCallPromise(this.ddp, 'room.greet', [this.roomId, 'start']);
+                await this.ddp.call('room.greet', [this.roomId, 'start']);
             }
             return;
         }
@@ -318,7 +318,7 @@ class Agent {
                 !didGreet(room, this.id, 'end')) { // 挨拶していなければ
                 this.state = this.END_GREETING;
                 await sleep(3000);
-                await ddpCallPromise(this.ddp, 'room.greet', [this.roomId, 'end']);
+                await this.ddp.call('room.greet', [this.roomId, 'end']);
                 await this.exitRoom();
             }
         } else if (!room.counting && !room.result && this.state !== this.THINKING) {

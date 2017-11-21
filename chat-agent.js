@@ -1,6 +1,5 @@
 /* global exports */
 const os = require('os');
-const { ddpCallPromise } = require('./util.js');
 const { GtpLeela } = require('gtp-wrapper');
 const { chat, Agent } = require('./agent.js');
 
@@ -52,7 +51,7 @@ class ChatAgent extends Agent {
                 variations: this.gtp.info.variations
             };
             this.commentOnMove();
-            await ddpCallPromise(this.ddp, 'updateRooms', [this.roomId, {
+            await this.ddp.call('updateRooms', [this.roomId, {
                 $push: { kakoHistory: {
                     winRate: this.gtp.info.variations[0].winRate,
                     ponder: this.gtp.info.variations
@@ -66,7 +65,7 @@ class ChatAgent extends Agent {
     async play(root, node) {
         const data = await super.play(root, node);
         data.color = this.color;
-        await ddpCallPromise(this.ddp, 'updateRooms', [this.roomId, {
+        await this.ddp.call('updateRooms', [this.roomId, {
             $set: {
                 kakoWinRate: data.winRate,
                 aiThought: data

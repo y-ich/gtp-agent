@@ -1,6 +1,5 @@
 /* global module */
-const { RetryDDP } = require('./retry-ddp.js');
-const { ddpCallPromise } = require('./util.js');
+const { DDPPlus } = require('ddp-plus');
 const { LeelaClient } = require('./winrate.js');
 const { ChatAgent } = require('./chat-agent.js');
 
@@ -12,10 +11,10 @@ const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
     'ws://localhost:4000/websocket';
 
 if (require.main === module) {
-    const mimiaka = new RetryDDP({ url: MIMIAKA_SERVER });
-    const twiigo = new RetryDDP({ url: TWIIGO_SERVER });
-    const winrate = new LeelaClient(mimiaka.ddp, parseInt(process.argv[2] || '1'));
-    const agent = new ChatAgent(twiigo.ddp, 'twiigo2015');
+    const mimiaka = new DDPPlus({ url: MIMIAKA_SERVER });
+    const twiigo = new DDPPlus({ url: TWIIGO_SERVER });
+    const winrate = new LeelaClient(mimiaka, parseInt(process.argv[2] || '1'));
+    const agent = new ChatAgent(twiigo, 'twiigo2015');
     let winrateBusy = false;
 
     winrate.onTargetAdded = async function() {
@@ -42,7 +41,7 @@ if (require.main === module) {
         if (wasReconnect) {
             await agent.stop();
         }
-        await ddpCallPromise(twiigo.ddp, 'becomeKako');
+        await twiigo.call('becomeKako');
         if (!winrateBusy) {
             agent.start();
         }
@@ -51,6 +50,6 @@ if (require.main === module) {
         await agent.stop();
     });
 
-    mimiaka.start();
-    twiigo.start();
+    mimiaka.connectWithRetry(1000, 60000);
+    twiigo.connectWithRetry(1000, 60000);
 }

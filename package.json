@@ -4,7 +4,7 @@
   "description": "a bridge between GTP client and Twiigo",
   "main": "main.js",
   "dependencies": {
-    "ddp": "^0.12.1",
+    "ddp-plus": "^0.0.1",
     "gtp-wrapper": "^1.2.2"
   },
   "devDependencies": {},

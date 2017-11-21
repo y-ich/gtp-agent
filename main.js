@@ -1,6 +1,5 @@
 /* global module */
-const { RetryDDP } = require('./retry-ddp.js');
-const { ddpCallPromise } = require('./util.js');
+const { DDPPlus } = require('ddp-plus');
 const { ChatAgent } = require('./chat-agent.js');
 
 const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
@@ -8,17 +7,17 @@ const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
     'ws://localhost:4000/websocket';
 
 if (require.main === module) {
-    const twiigo = new RetryDDP({ url: TWIIGO_SERVER });
-    const client = new ChatAgent(twiigo.ddp, 'twiigo2015');
+    const twiigo = new DDPPlus({ url: TWIIGO_SERVER });
+    const client = new ChatAgent(twiigo, 'twiigo2015');
     twiigo.on('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.stop();
         }
-        await ddpCallPromise(twiigo.ddp, 'becomeKako');
+        await twiigo.call('becomeKako');
         client.start();
     });
     twiigo.on('connect-error', async function(error) {
         await client.stop();
     });
-    twiigo.start();
+    twiigo.connectWithRetry(1000, 60000);
 }
