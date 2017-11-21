@@ -20,12 +20,14 @@ if (require.main === module) {
     winrate.onTargetAdded = async function() {
         agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
         await agent.stop();
+        twiigo.stopRetry();
+        twiigo.stop();
         winrateBusy = true;
     }
     winrate.onTargetRemoved = async function() {
         console.log('onTargetRemoved');
         winrateBusy = false;
-        agent.start();
+        twiigo.connectWithRetry(1000, 60000);
     }
     mimiaka.on('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
@@ -41,7 +43,6 @@ if (require.main === module) {
         if (wasReconnect) {
             await agent.stop();
         }
-        await twiigo.call('becomeKako');
         if (!winrateBusy) {
             agent.start();
         }

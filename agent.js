@@ -96,17 +96,17 @@ class Agent {
         this.num = 0;
         this.byoyomi = process.env.NODE_ENV === 'production' ? 15 : 1;
         this.gtp = null;
-        this.userChanged = this.userChanged.bind(this);
     }
 
     start() {
         this.selfObserver = this.ddp.observe('users', undefined, this.userChanged);
-        this.selfSubscriptionId = this.ddp.subscribe('users', [{ 'twitter.profile.screen_name': this.screenName }], () => {
+        this.selfSubscriptionId = this.ddp.subscribe('users', [{ 'twitter.profile.screen_name': this.screenName }], async () => {
             const ids = Object.keys(this.ddp.collections['users']);
             if (ids.length !== 1) {
                 console.log('user selector is wrong.');
             }
             this.id = ids[0];
+            await this.ddp.call('setUserId', [this.id]);
             this.user = this.ddp.collections['users'][this.id];
             this.roomsSelector = { $or: ['black', 'white'].map(e => this.gtpName ? {
                 [e]: this.id,
@@ -116,7 +116,6 @@ class Agent {
                 [e]: this.id,
                 [`greet.end.${this.id}`]: { $exists: false }
             })};
-            this.userChanged(this.id);
             this.observeRooms();
         });
     }
@@ -152,23 +151,11 @@ class Agent {
     async exitRoom() {
         await this.stopObserveRoom();
         chat.disableChat(this.roomId);
-        await this.ddp('room.exit', [this.roomId, true]);
+        await this.ddp.call('room.exit', [this.roomId, true]);
         this.roomId = null;
         this.state = null;
         this.observeRooms();
         return true;
-    }
-
-    async userChanged(id, oldFields, clearedFields, newFields) {
-        if (this.roomId) {
-            console.log('already playing');
-            return;
-        }
-        if (!(newFields && newFields.twiigo && newFields.twiigo.request)) {
-            return null;
-        }
-        const roomId = await this.ddp.call('room.make', [this.id]);
-        await this.enterRoom(roomId);
     }
 
     async startGtp(sgf) {
@@ -311,7 +298,7 @@ class Agent {
 
         if (fields.counting) { // 整地に入ったなら
             await this.stopGtp();
-        } else if (fields.result) { // 終局したなら
+        } else if (room.result) { // 終局したなら
             console.log("behave: end");
             await this.stopGtp();
             if (this.state !== this.END_GREETING &&

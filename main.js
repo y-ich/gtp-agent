@@ -13,7 +13,6 @@ if (require.main === module) {
         if (wasReconnect) {
             await client.stop();
         }
-        await twiigo.call('becomeKako');
         client.start();
     });
     twiigo.on('connect-error', async function(error) {
