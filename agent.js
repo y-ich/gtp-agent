@@ -217,11 +217,6 @@ class Agent {
             }
         } while (data == null);
         switch (data.result) {
-            case null:
-            case undefined: // 異常動作なら即投了
-                root.RE = `${jssgf.opponentOf(this.color)}+R`;
-                this.state = this.STOP;
-                break;
             case 'PASS': {
                 const next = { _children: [] };
                 next[this.color] = '';
@@ -234,10 +229,16 @@ class Agent {
                 this.state = this.STOP;
                 break;
             default: {
-                const next = { _children: [] };
-                next[this.color] = coord2move(data.result, this.size);
-                node._children.push(next);
-                this.state = this.WAITING;
+                if (/[A-Z][0-9]{1,2}/.test(data.result)) {
+                    const next = { _children: [] };
+                    next[this.color] = coord2move(data.result, this.size);
+                    node._children.push(next);
+                    this.state = this.WAITING;
+                } else {
+                    console.log('play error', data);
+                    this.state = this.ERROR;
+                    return null;
+                }
             }
         }
         try {
