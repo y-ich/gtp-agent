@@ -10,12 +10,6 @@ const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
     'wss://mimiaka-chat.herokuapp.com/websocket' :
     'ws://localhost:5000/websocket';
 
-const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
-    'wss://twiigo.herokuapp.com/websocket' :
-    'ws://localhost:4000/websocket';
-
-GtpClient.WORK_DIR = process.env.PWD;
-GtpClient.COMMAND = '/usr/local/bin/leela';
 GtpClient.OPTIONS = ['--gtp', '--threads', Math.min(7, os.cpus().length - 1)];
 
 

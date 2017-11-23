@@ -1,11 +1,13 @@
 {
-  "name": "twiigo-client",
-  "version": "1.0.0",
-  "description": "a bridge between GTP client and Twiigo",
-  "main": "main.js",
+  "name": "gtp-agent",
+  "version": "0.0.1",
+  "description": "GTP client for Mimiaka and Twiigo",
+  "bin": {
+    "gtpClient": "./switcher.js"
+  },
   "dependencies": {
     "ddp-plus": "^0.0.1",
-    "gtp-wrapper": "^1.2.2"
+    "gtp-wrapper": "y-ich/gtp-wrapper#leela-binaries"
   },
   "devDependencies": {},
   "scripts": {

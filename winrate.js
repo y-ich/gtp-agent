@@ -84,6 +84,7 @@ class LeelaClient {
     }
 
     async destroy() {
+        console.log('destroy');
         await this.stopUpdateWinrate();
         if (this.constantsSubscriptionId) {
             this.ddp.unsubscribe(this.constantsSubscriptionId);
