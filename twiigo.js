@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* global module */
 const { DDPPlus } = require('ddp-plus');
 const { ChatAgent } = require('./chat-agent.js');

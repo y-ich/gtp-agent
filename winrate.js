@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* global module exports */
 const os = require('os');
 const jssgf = require('jssgf');

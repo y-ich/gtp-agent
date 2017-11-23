@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /* global module */
 const { DDPPlus } = require('ddp-plus');
 const { LeelaClient } = require('./winrate.js');

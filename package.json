@@ -3,7 +3,9 @@
   "version": "0.0.1",
   "description": "GTP client for Mimiaka and Twiigo",
   "bin": {
-    "gtpClient": "./switcher.js"
+    "gtpAgent": "./switcher.js",
+    "chatAgent": "./twiigo.js",
+    "winrate": "./winrate.js"
   },
   "dependencies": {
     "ddp-plus": "^0.0.1",
