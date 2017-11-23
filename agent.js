@@ -330,14 +330,14 @@ class Agent {
                         await this.exitRoom();
                     }
                 } else { // 手番なら
+                    console.log('behave play');
+                    this.state = this.THINKING;
                     if (this.gtp) {
                         await this.opponentPlay(root, node);
                     } else {
                         this.size = parseInt(root.SZ || '19');
                         await this.startGtp(room.game);
                     }
-                    console.log('behave play');
-                    this.state = this.THINKING;
                     try {
                         await this.play(root, node);
                     } catch (e) {
