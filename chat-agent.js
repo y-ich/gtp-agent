@@ -15,7 +15,7 @@ class GtpLeela2 extends GtpLeela {
         const match = line.match(/^Nodes:\s+([0-9]+), Win:\s+([.0-9]+)%.*, PV:(.+)$/);
         if (match) {
             this.winRate = parseFloat(match[2]);
-            this.ddp.call('updateRooms', [
+            this.agent.ddp.call('updateRooms', [
                 this.agent.roomId,
                 { $set: { 'kakoWinRate': this.winRate }}
             ]);
