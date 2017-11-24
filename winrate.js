@@ -195,7 +195,12 @@ class LeelaClient {
             }
         });
         this.gtp = instance;
-        return await promise;
+        const data = await promise;
+        const forecast = coord2move(data.result, size);
+        if (forecast !== lastForecast) {
+            this.ddp.call('forecast', [id, num, forecast, true]);
+            lastForecast = forecast;
+        }
     }
 
     async stopUpdateWinrate() {
