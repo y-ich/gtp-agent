@@ -33,7 +33,6 @@ class ChatAgent extends Agent {
         super(...args);
         this.ponder = null;
         this.wasUnexpected = false;
-        this.roomsCursorOptions = { fields: { kakoHistory: 0 }};
     }
 
     async startGtp(sgf) {
@@ -82,7 +81,8 @@ class ChatAgent extends Agent {
 
     commentOnMove() {
         if (this.ponder.variations[0].winRate <= 20) { // 勝勢なら
-            return;
+            console.log('winning');
+           return;
         }
 
         let message;

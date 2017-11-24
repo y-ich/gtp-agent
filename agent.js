@@ -90,6 +90,19 @@ class Agent {
         this.num = 0;
         this.byoyomi = process.env.NODE_ENV === 'production' ? 15 : 1;
         this.gtp = null;
+        this.roomsCursorOptions = { fields: {
+            black: 1,
+            white: 1,
+            mates: 1
+        }};
+        this.roomCursorOptions = { fields: {
+            black: 1,
+            white: 1,
+            game: 1,
+            mates: 1,
+            counting: 1,
+            result: 1
+        }};
     }
 
     start() {
@@ -380,7 +393,7 @@ class Agent {
             });
         }
         this.roomObserver = this.ddp.observe('rooms', handler, handler);
-        this.roomsSubscriptionId = this.ddp.subscribe('rooms', [{ _id: id }]);
+        this.roomsSubscriptionId = this.ddp.subscribe('rooms', [{ _id: id }, this.roomCursorOptions]);
     }
 
     async stopObserveRoom() {
