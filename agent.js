@@ -387,8 +387,8 @@ class Agent {
 
     observeRoom(id) {
         console.log('observe');
-        const handler = (id, fields) => {
-            this.behaveInRoom(id, fields).catch(function (reason) {
+        const handler = (id, oldFields, clearedFields, newFields) => {
+            this.behaveInRoom(id, oldFields, clearedFields, newFields).catch(function (reason) {
                 console.log('behave error', reason);
             });
         }
