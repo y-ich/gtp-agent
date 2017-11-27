@@ -49,14 +49,16 @@ class ChatAgent extends Agent {
                 actual: coord,
                 variations: this.gtp.info.variations
             };
-            this.commentOnMove();
+            if (this.gtp.info.variations.length > 0) {
+                this.commentOnMove();
+            }
             await this.ddp.call('updateRooms', [this.roomId, {
                 $push: { kakoHistory: {
-                    winRate: this.gtp.info.variations[0].winRate,
+                    winRate: this.gtp.info.variations[0] && this.gtp.info.variations[0].winRate,
                     ponder: this.gtp.info.variations
                 }}
             }]).catch(function(reason) {
-                console.log(reason);
+                console.log('updateRooms reason', reason);
             });
         }
     }

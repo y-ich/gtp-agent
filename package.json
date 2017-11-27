@@ -1,6 +1,6 @@
 {
   "name": "gtp-agent",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "GTP client for Mimiaka and Twiigo",
   "bin": {
     "gtpAgent": "./switcher.js",
@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "ddp-plus": "^0.0.1",
-    "gtp-wrapper": "y-ich/gtp-wrapper#leela-binaries"
+    "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
+    "jssgf": "^0.3.7"
   },
   "devDependencies": {},
   "scripts": {

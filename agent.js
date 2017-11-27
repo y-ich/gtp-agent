@@ -1,14 +1,10 @@
 /* global exports */
 const os = require('os');
 const jssgf = require('jssgf');
-const DDPClient = require('ddp');
 const { coord2move, move2coord, GtpClient } = require('gtp-wrapper');
 const { sleep } = require('./util.js');
 const { didGreet, isIn } = require('./helpers.js');
-
-const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
-    'wss://mimiaka-chat.herokuapp.com/websocket' :
-    'ws://localhost:5000/websocket';
+const { chat } = require('./chat.js');
 
 GtpClient.OPTIONS = ['--gtp', '--threads', Math.min(7, os.cpus().length - 1)];
 
@@ -25,38 +21,208 @@ function primaryLastNode(root) {
     return { num, node };
 }
 
-const chat = {
-    chatServer: null,
-    rooms: new Set(),
-    enableChat(roomId) {
-        if (!this.chatServer) {
-            this.chatServer = new DDPClient({ url: CHAT_SERVER });
-            this.chatServer.connect();
-        }
-        this.rooms.add(roomId);
-    },
+class AgentState {
+    constructor() {
 
-    disableChat(roomId) {
-        this.rooms.delete(roomId);
-        if (this.rooms.size === 0) {
-            this.chatServer.close();
-            this.chatServer = null;
-        }
-    },
+    }
 
-    chat(roomId, user, message, lang) {
-        if (!this.chatServer) {
-            console.log('has not connected with chatServer yet', message);
-            return;
+    async entry(agent) {
+        console.log(this.constructor.name);
+    }
+
+    async exit(agent) {
+
+    }
+
+    async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        if (!isIn(room, agent.opponentId)) {
+            await agent.stopGtp();
+            await agent.exitRoom();
+            agent.setState(agent.LOBBY);
+        } else if (room.counting) {
+            agent.setState(agent.COUNTING);
+        } else if (room.result) {
+            console.log('pass1');
+            console.log(room, newFields);
+            agent.setState(agent.END_GREETING);
         }
-        this.chatServer.call('chat', ['twiigo', roomId, null, {
-            id: user._id,
-            name: user.profile.name,
-            lang,
-            gender: user.profile.gender
-        }, message], function(error) {
-            console.log(error);
-        });
+    }
+
+    async timedOut(agent) {
+
+    }
+}
+
+class LobbyState extends AgentState {
+    async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        const opponentId = room.black === agent.id ? room.white : room.black;
+        if (!isIn(room, agent.id) && isIn(room, opponentId)) {
+            await agent.enterRoom(room._id);
+        }
+    }
+}
+
+class ErrorState extends AgentState {
+
+}
+
+class NotGreetState extends AgentState {
+    async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        if (isIn(room, this.opponentId)) { // 相手が部屋に居れば
+            agent.setState(agent.START_GREETING);
+        }
+    }
+}
+
+class StartGreetingState extends AgentState {
+    async entry(agent) {
+        super.entry(agent);
+        await sleep(3000); // TODO - 0だと何故かチャットしない。
+        this.timedOut(agent);
+    }
+
+    async timedOut(agent) {
+        await agent.ddp.call('room.greet', [agent.roomId, 'start']);
+        const room = agent.ddp.collections.rooms[agent.roomId];
+        const [root] = jssgf.fastParse(room.game);
+        if (root._children.length === 0) { // 初手なら
+            const whiteSen = root.HA && parseInt(root.HA) >= 2;
+            if ((whiteSen && agent.color === 'W') || (!whiteSen && agent.color === 'B')) { // 手番なら
+                agent.setState(agent.FIRST_MOVE);
+            } else {
+                agent.setState(agent.WAITING);
+            }
+        } else {
+            agent.setState(agent.THINKING);
+        }
+    }
+}
+
+class FirstMoveState extends AgentState {
+    async entry(agent) {
+        super.entry(agent);
+        await sleep(3000);
+        this.timedOut(agent);
+    }
+
+    async timedOut(agent) {
+        agent.setState(agent.THINKING);
+    }
+}
+
+class WaitingState extends AgentState {
+    async entry(agent) {
+        super.entry(agent);
+        if (!agent.gtp) {
+            const room = agent.ddp.collections.rooms[agent.roomId];
+            await agent.startGtp(room.game);
+        }
+    }
+
+    async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        if (!isIn(room, agent.opponentId)) {
+            await agent.stopGtp();
+            await agent.exitRoom();
+            agent.setState(agent.LOBBY);
+        } else if (newFields.counting) {
+            agent.setState(agent.COUNTING);
+        } else if (newFields.result) {
+            console.log('pass2');
+            agent.setState(agent.END_GREETING);
+        } else if (newFields.game) {
+            if (!agent.gtp) {
+                await agent.startGtp(room.game);
+            }
+            const [root] = jssgf.fastParse(room.game);
+            const { num, node } = primaryLastNode(root);
+            if (!node[agent.color]) {
+                await agent.opponentPlay(root, node);
+                agent.setState(agent.THINKING);
+            }
+        }
+    }
+}
+
+class ThinkingState extends AgentState {
+    async entry(agent) {
+        super.entry(agent);
+        this.next = null;
+        const room = agent.ddp.collections.rooms[agent.roomId];
+        if (!agent.gtp) {
+            await agent.startGtp(room.game);
+        }
+        const [root] = jssgf.fastParse(room.game);
+        const { num, node } = primaryLastNode(root);
+        const data = await agent.play(room.game);
+        switch (data.result) {
+            case 'PASS': {
+                const next = { _children: [] };
+                next[agent.color] = '';
+                node._children.push(next);
+                this.next = agent.WAITING;
+                break;
+            }
+            case 'resign':
+                root.RE = `${jssgf.opponentOf(this.color)}+R`;
+                this.next = agent.STOP;
+                break;
+            default: {
+                if (/[A-Z][0-9]{1,2}/.test(data.result)) {
+                    const next = { _children: [] };
+                    next[agent.color] = coord2move(data.result, agent.size);
+                    node._children.push(next);
+                    this.next = agent.WAITING;
+                } else {
+                    console.log('play error', data);
+                    this.next = agent.ERROR;
+                }
+            }
+        }
+        try {
+            await agent.ddp.call('room.updateGame', [agent.roomId, jssgf.stringify([root])]);
+        } catch (e) {
+            console.log(e);
+            agent.setState(agent.ERROR);
+        }
+    }
+
+    async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        if (newFields.counting) {
+            agent.setState(agent.COUNTING);
+        } else if (newFields.result) {
+            console.log('pass3');
+            agent.setState(agent.END_GREETING);
+        } else if (newFields.game) {
+            agent.setState(this.next);
+        }
+    }
+}
+
+class CountingState extends AgentState {
+
+}
+
+class StopState extends AgentState {
+
+}
+
+class EndGreetingState extends AgentState {
+    async entry(agent) {
+        super.entry(agent);
+        await sleep(2000);
+        this.timedOut(agent);
+    }
+
+    async changed(agent) {
+        // LOBBYに移るので何もしない。(default changedを使わない。使うとroom.result条件でEndGreetingStateにまた入ってしまう)
+    }
+
+    async timedOut(agent) {
+        console.log(agent.roomId);
+        await agent.ddp.call('room.greet', [agent.roomId, 'end']);
+        await sleep(3000);
+        await agent.exitRoom();
+        agent.setState(agent.LOBBY);
     }
 }
 
@@ -65,14 +231,16 @@ const chat = {
  */
 class Agent {
     static init() {
-        this.prototype.ERROR = -1;
-        this.prototype.NOT_GREET = 0;
-        this.prototype.START_GREETING = 1;
-        this.prototype.WAITING = 2;
-        this.prototype.THINKING = 3;
-        this.prototype.COUNTING = 4;
-        this.prototype.STOP = 5;
-        this.prototype.END_GREETING = 6;
+        this.prototype.ERROR = new ErrorState();
+        this.prototype.LOBBY = new LobbyState();
+        this.prototype.NOT_GREET = new NotGreetState();
+        this.prototype.START_GREETING = new StartGreetingState();
+        this.prototype.WAITING = new WaitingState();
+        this.prototype.FIRST_MOVE = new FirstMoveState();
+        this.prototype.THINKING = new ThinkingState();
+        this.prototype.COUNTING = new CountingState();
+        this.prototype.STOP = new StopState();
+        this.prototype.END_GREETING = new EndGreetingState();
     }
 
     /**
@@ -84,7 +252,7 @@ class Agent {
         this.screenName = screenName;
         this.gtpName = gtpName;
         this.roomId = null;
-        this.state = this.NOT_GREET;
+        this.state = this.LOBBY;
         this.size = 19;
         this.color = null;
         this.num = 0;
@@ -93,13 +261,16 @@ class Agent {
         this.roomsCursorOptions = { fields: {
             black: 1,
             white: 1,
-            mates: 1
+            game: 1,
+            mates: 1,
+            greet: 1
         }};
         this.roomCursorOptions = { fields: {
             black: 1,
             white: 1,
             game: 1,
             mates: 1,
+            greet: 1,
             counting: 1,
             result: 1
         }};
@@ -138,7 +309,7 @@ class Agent {
     }
 
     async enterRoom(id) {
-        if (this.roomId) {
+        if (this.state !== this.LOBBY) {
             console.log('already playing other game', this.roomId, id);
             return false;
         }
@@ -156,16 +327,17 @@ class Agent {
     }
 
     async exitRoom() {
+        console.log('exitRoom');
         await this.stopObserveRoom();
         chat.disableChat(this.roomId);
         await this.ddp.call('room.exit', [this.roomId, true]);
         this.roomId = null;
-        this.state = null;
         this.observeRooms();
         return true;
     }
 
     async startGtp(sgf) {
+        console.log('startGtp');
         this.gtp = new GtpClient();
 
         const options = [];
@@ -208,7 +380,7 @@ class Agent {
         }
     }
 
-    async play(root, node) {
+    async play(sgf) {
         let data;
         do {
             try {
@@ -216,152 +388,71 @@ class Agent {
             } catch (e) {
                 this.gtp = null;
                 if (e.message === 'This socket is closed.') {
-                    this.state = this.ERROR;
                     throw new Error('no gtp command', 'COMMAND not found');
                 } else {
-                    if (e.signal === 'SIGINT') { // terminate
-                        this.state = this.STOP;
-                    } else {
-                        console.log('Agent::play', e);
-                        this.state = this.ERROR;
+                    switch (e.signal) {
+                        case 'SIGSEGV':
+                        console.log(e);
+                        await this.startGtp(sgf);
+                        break;
+                        default:
+                        throw e;
                     }
-                    throw e;
                 }
             }
         } while (data == null);
-        switch (data.result) {
-            case 'PASS': {
-                const next = { _children: [] };
-                next[this.color] = '';
-                node._children.push(next);
-                this.state = this.WAITING;
-                break;
-            }
-            case 'resign':
-                root.RE = `${jssgf.opponentOf(this.color)}+R`;
-                this.state = this.STOP;
-                break;
-            default: {
-                if (/[A-Z][0-9]{1,2}/.test(data.result)) {
-                    const next = { _children: [] };
-                    next[this.color] = coord2move(data.result, this.size);
-                    node._children.push(next);
-                    this.state = this.WAITING;
-                } else {
-                    console.log('play error', data);
-                    this.state = this.ERROR;
-                    return null;
-                }
-            }
-        }
-        try {
-            await this.ddp.call('room.updateGame', [this.roomId, jssgf.stringify([root])]);
-        } catch (e) {
-            this.state = this.ERROR;
-            console.log(e);
-        }
         return data;
     }
 
-    async behaveInLobby(id, oldFields, clearedFields, newFields) {
-        console.log('behaveInLobby', id);
-        const room = this.ddp.collections.rooms[id];
-        let opponentId;
-        if (room.black === this.id) {
-            opponentId = room.white;
-        } else {
-            opponentId = room.black;
-        }
-
-        // 入室
-        if (!this.roomId && !isIn(room, this.id) && isIn(room, opponentId)) {
-            console.log('enterRoom');
-            await this.enterRoom(id);
-        }
+    async changed(id, oldFields, clearedFields, newFields) {
+        await this.state.changed(this, this.ddp.collections.rooms[id], oldFields, clearedFields, newFields);
     }
 
-    async behaveInRoom(id, oldFields, clearedFields, newFields) {
-        console.log('behaveInRoom', id);
-        const fields = newFields || {};
-        const room = this.ddp.collections.rooms[id];
-        let opponentId;
+    setState(state) {
+        this.state = state;
+        this.state.entry(this).catch(function(reason) {
+            console.log(reason);
+        });
+    }
+
+    setStateFromRoom(room) {
+        console.log('setStateFromRoom');
         if (room.black === this.id) {
             this.color = 'B';
-            opponentId = room.white;
+            this.opponentId = room.white;
         } else {
             this.color = 'W';
-            opponentId = room.black;
+            this.opponentId = room.black;
         }
-
-        // 挨拶
-        if (this.state !== this.START_GREETING &&
-            !didGreet(room, this.id, 'start')) { // 挨拶していなければ
-            if (isIn(room, opponentId)) { // 相手が部屋に居れば
-                this.state = this.START_GREETING;
-                await sleep(3000);
-                await this.ddp.call('room.greet', [this.roomId, 'start']);
+        if (!didGreet(room, this.id, 'start')) {
+            if (isIn(room, this.opponentId)) {
+                this.setState(this.START_GREETING);
+            } else {
+                // 相手が要る時に部屋に入る仕様なのでここはコールされないはず。NOT_GREET状態要らないか
+                this.setState(this.NOT_GREET);
             }
-            return;
-        }
-
-        if (fields.counting) { // 整地に入ったなら
-            await this.stopGtp();
-        } else if (room.result) { // 終局したなら
-            console.log("behave: end");
-            await this.stopGtp();
-            if (this.state !== this.END_GREETING &&
-                !didGreet(room, this.id, 'end')) { // 挨拶していなければ
-                this.state = this.END_GREETING;
-                await sleep(3000);
-                await this.ddp.call('room.greet', [this.roomId, 'end']);
-                await this.exitRoom();
+        } else if (room.counting) {
+            this.setState(this.COUNTING);
+        } else if (room.result) {
+            if (didGreet(room, this.id, 'end')) {
+                console.log('should not reached'); // 挨拶した部屋には入らない
+            } else {
+                this.setState(this.STOP);
             }
-        } else if (!room.counting && !room.result && this.state !== this.THINKING) {
+        } else {
             const [root] = jssgf.fastParse(room.game);
-            if (root._children.length === 0) { // 初手なら
+            const { num, node } = primaryLastNode(root);
+            if (num === 0) {
                 const whiteSen = root.HA && parseInt(root.HA) >= 2;
                 if ((whiteSen && this.color === 'W') || (!whiteSen && this.color === 'B')) { // 手番なら
-                    this.size = parseInt(root.SZ || '19');
-                    await this.startGtp(room.game);
-                    this.state = this.THINKING;
-                    await sleep(3000);
-                    await this.play(root, root);
-                } else if (!isIn(room, opponentId)) { // 相手が居なければ
-                    console.log("behave: opponent left room before first move");
-                    await this.stopGtp();
-                    console.log('behave2');
-                    await this.exitRoom();
+                    this.setState(this.FIRST_MOVE);
+                } else {
+                    this.setState(this.WAITING);
                 }
-            } else { // 初手じゃなければ
-                const { num, node } = primaryLastNode(root);
-                this.num = num;
-                if (node[this.color]) { // 手番でなければ
-                    if (!isIn(room, opponentId)) { // 相手が居なければ
-                        console.log("behave: opponent left room on the way");
-                        await this.stopGtp();
-                        console.log('behave3');
-                        await this.exitRoom();
-                    }
-                } else { // 手番なら
-                    console.log('behave play');
-                    this.state = this.THINKING;
-                    if (this.gtp) {
-                        await this.opponentPlay(root, node);
-                    } else {
-                        this.size = parseInt(root.SZ || '19');
-                        await this.startGtp(room.game);
-                    }
-                    try {
-                        await this.play(root, node);
-                    } catch (e) {
-                        if (this.state === this.ERROR) {
-                            console.log('retry playing');
-                            this.state = this.THINKING;
-                            await this.startGtp(room.game);
-                            await this.play(root, node);
-                        }
-                    }
-                }
+            } else if (node[this.color]) {
+                this.setState(this.WAITING);
+            } else {
+                this.setState(this.THINKING);
             }
         }
     }
@@ -369,7 +460,7 @@ class Agent {
     observeRooms() {
         console.log('observe');
         const handler = (id, oldFields, clearedFields, newFields) => {
-            this.behaveInLobby(id, oldFields, clearedFields, newFields).catch(function (reason) {
+            this.changed(id, oldFields, clearedFields, newFields).catch(function (reason) {
                 console.log('behave error', reason);
             });
         }
@@ -387,12 +478,19 @@ class Agent {
 
     observeRoom(id) {
         console.log('observe');
-        const handler = (id, oldFields, clearedFields, newFields) => {
-            this.behaveInRoom(id, oldFields, clearedFields, newFields).catch(function (reason) {
+        const addedHandler = (id) => {
+            const room = this.ddp.collections.rooms[id];
+            this.setStateFromRoom(room);
+            this.changed(id).catch(function (reason) {
                 console.log('behave error', reason);
             });
-        }
-        this.roomObserver = this.ddp.observe('rooms', handler, handler);
+        };
+        const changedHandler = (id, oldFields, clearedFields, newFields) => {
+            this.changed(id, oldFields, clearedFields, newFields).catch(function (reason) {
+                console.log('behave error', reason);
+            });
+        };
+        this.roomObserver = this.ddp.observe('rooms', addedHandler, changedHandler);
         this.roomsSubscriptionId = this.ddp.subscribe('rooms', [{ _id: id }, this.roomCursorOptions]);
     }
 
