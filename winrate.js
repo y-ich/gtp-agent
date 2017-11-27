@@ -196,7 +196,11 @@ class LeelaClient {
         });
         this.gtp = instance;
         const data = await promise;
-        const forecast = coord2move(data.result, size);
+        let forecast = coord2move(data.result, size);
+        if (num == 0) {
+            forecast = forecast.replace(/^[a-i]/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
+            forecast = forecast.replace(/[k-s]$/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
+        }
         if (forecast !== lastForecast) {
             this.ddp.call('forecast', [id, num, forecast, true]);
             lastForecast = forecast;
