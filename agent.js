@@ -2,24 +2,12 @@
 const os = require('os');
 const jssgf = require('jssgf');
 const { coord2move, move2coord, GtpClient } = require('gtp-wrapper');
-const { sleep } = require('./util.js');
+const { sleep, primaryLastNode } = require('./util.js');
 const { didGreet, isIn } = require('./helpers.js');
 const { chat } = require('./chat.js');
 
 GtpClient.OPTIONS = ['--gtp', '--threads', Math.min(7, os.cpus().length - 1)];
 
-
-function primaryLastNode(root) {
-    let num = 0;
-    let node = root;
-    while (node._children.length > 0) {
-        node = node._children[0];
-        if (node.B || node.W) {
-            num += 1;
-        }
-    }
-    return { num, node };
-}
 
 class AgentState {
     constructor() {

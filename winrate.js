@@ -4,28 +4,30 @@ const os = require('os');
 const jssgf = require('jssgf');
 const { GtpLeela, coord2move } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
+const { primaryLastNode } = require('./util.js');
 
-const BYOYOMI = 28800; // 8時間。事実上の無限大。
+const BYOYOMI = 57600; // 16時間(5時封じ手から翌朝9時を想定)。free dynoの場合40分程度でmemory quota exceededになる
 const MIMIAKA_SERVER = process.env.NODE_ENV === 'production' ?
     'wss://mimiaka.herokuapp.com/websocket' :
     'ws://localhost:3000/websocket';
 
-function getNumAndTurn(sgf) {
-    let [node] = jssgf.fastParse(sgf);
-    const size = parseInt(node.SZ || '19');
-    const rule = node.RU || (node.KM === '7.5' ? 'Chinese' : 'Japanese');
-    let num = 0;
-    while (node._children.length > 0) {
-        node = node._children[0];
-        num++;
+
+function getTurn(node, root) {
+    if (node.B != null) {
+        return 'W';
+    } else if (node.W != null) {
+        return 'B';
+    } else if (node === root) {
+        if (root.HA && parseInt(root.HA) >= 2) {
+            return 'W';
+        } else {
+            return 'B';
+        }
+    } else {
+        throw new Error('unkonwn');
     }
-    return {
-        size,
-        rule,
-        num,
-        turn: node.B ? 'W' : node.W ? 'B' : null
-    };
 }
+
 
 class LeelaClient {
     constructor(ddp, nth) {
@@ -164,7 +166,11 @@ class LeelaClient {
         }
 
         this.sgf = record.sgf;
-        const { size, rule, num, turn } = getNumAndTurn(this.sgf);
+        const [root] = jssgf.fastParse(this.sgf);
+        const size = parseInt(root.SZ || '19');
+        const rule = root.RU || (root.KM === '7.5' ? 'Chinese' : 'Japanese');
+        const { num, node } = primaryLastNode(root);
+        const turn = getTurn(node, root);
         const options = ['--threads', os.cpus().length - 1];
         if (rule === 'Japanese') {
             options.push('--komiadjust');
