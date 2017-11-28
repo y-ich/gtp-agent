@@ -1,9 +1,6 @@
 /* global exports */
 const os = require('os');
-const jssgf = require('jssgf');
 const { move2coord, GtpClient } = require('gtp-wrapper');
-const { primaryLastNode } = require('./util.js');
-const { didGreet, isIn } = require('./helpers.js');
 const { chat } = require('./chat.js');
 const { AgentState } = require('./agent-state.js');
 
@@ -185,48 +182,6 @@ class Agent {
         });
     }
 
-    setStateFromRoom(room) {
-        console.log('setStateFromRoom');
-        if (room.black === this.id) {
-            this.color = 'B';
-            this.opponentId = room.white;
-        } else {
-            this.color = 'W';
-            this.opponentId = room.black;
-        }
-        if (!didGreet(room, this.id, 'start')) {
-            if (isIn(room, this.opponentId)) {
-                this.setState(this.state.START_GREETING);
-            } else {
-                // 相手が要る時に部屋に入る仕様なのでここはコールされないはず。NOT_GREET状態要らないか
-                this.setState(this.state.NOT_GREET);
-            }
-        } else if (room.counting) {
-            this.setState(this.state.COUNTING);
-        } else if (room.result) {
-            if (didGreet(room, this.id, 'end')) {
-                console.log('should not reached'); // 挨拶した部屋には入らない
-            } else {
-                this.setState(this.state.STOP);
-            }
-        } else {
-            const [root] = jssgf.fastParse(room.game);
-            const { num, node } = primaryLastNode(root);
-            if (num === 0) {
-                const whiteSen = root.HA && parseInt(root.HA) >= 2;
-                if ((whiteSen && this.color === 'W') || (!whiteSen && this.color === 'B')) { // 手番なら
-                    this.setState(this.state.FIRST_MOVE);
-                } else {
-                    this.setState(this.state.WAITING);
-                }
-            } else if (node[this.color]) {
-                this.setState(this.state.WAITING);
-            } else {
-                this.setState(this.state.THINKING);
-            }
-        }
-    }
-
     observeRooms() {
         console.log('observe');
         const handler = (id, oldFields, clearedFields, newFields) => {
@@ -250,7 +205,14 @@ class Agent {
         console.log('observe');
         const addedHandler = (id) => {
             const room = this.ddp.collections.rooms[id];
-            this.setStateFromRoom(room);
+            if (room.black === this.id) {
+                this.color = 'B';
+                this.opponentId = room.white;
+            } else {
+                this.color = 'W';
+                this.opponentId = room.black;
+            }
+            this.setState(AgentState.fromRoom(this, room));
             this.changed(id).catch(function (reason) {
                 console.log('behave error', reason);
             });

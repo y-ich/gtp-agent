@@ -2,7 +2,7 @@
 const jssgf = require('jssgf');
 const { coord2move } = require('gtp-wrapper');
 const { sleep, primaryLastNode } = require('./util.js');
-const { isIn } = require('./helpers.js');
+const { didGreet, isIn } = require('./helpers.js');
 
 
 class AgentState {
@@ -21,6 +21,40 @@ class AgentState {
 
     static initialState() {
         return this.prototype.LOBBY;
+    }
+
+    static fromRoom(agent, room) {
+        if (!didGreet(room, agent.id, 'start')) {
+            if (isIn(room, agent.opponentId)) {
+                return this.prototype.START_GREETING;
+            } else {
+                // 相手が要る時に部屋に入る仕様なのでここはコールされないはず。NOT_GREET状態要らないか
+                return this.prototype.NOT_GREET;
+            }
+        } else if (room.counting) {
+            return this.prototype.COUNTING;
+        } else if (room.result) {
+            if (didGreet(room, agent.id, 'end')) {
+                throw new Error('should-not-reached'); // 終わりの挨拶した部屋には入らない
+            } else {
+                return this.prototype.STOP;
+            }
+        } else {
+            const [root] = jssgf.fastParse(room.game);
+            const { num, node } = primaryLastNode(root);
+            if (num === 0) {
+                const whiteSen = root.HA && parseInt(root.HA) >= 2;
+                if ((whiteSen && agent.color === 'W') || (!whiteSen && agent.color === 'B')) { // 手番なら
+                    return this.prototype.FIRST_MOVE;
+                } else {
+                    return this.prototype.WAITING;
+                }
+            } else if (node[agent.color]) {
+                return this.prototype.WAITING;
+            } else {
+                return this.prototype.THINKING;
+            }
+        }
     }
 
     constructor() {
@@ -43,8 +77,6 @@ class AgentState {
         } else if (room.counting) {
             agent.setState(this.COUNTING);
         } else if (room.result) {
-            console.log('pass1');
-            console.log(room, newFields);
             agent.setState(this.END_GREETING);
         }
     }
