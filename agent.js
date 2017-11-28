@@ -82,7 +82,7 @@ class Agent {
         }
         if (await this.ddp.call('room.enter', [id, true])) {
             this.roomId = id;
-            const room = this.ddp.collections.rooms[this.roomId];
+            const room = this.getCurrentRoom();
             this.color = room.black === this.id ? 'B' : 'W';
             chat.enableChat(this.roomId);
             this.stopObserveRooms();
@@ -172,7 +172,7 @@ class Agent {
     }
 
     async changed(id, oldFields, clearedFields, newFields) {
-        await this.state.changed(this, this.ddp.collections.rooms[id], oldFields, clearedFields, newFields);
+        await this.state.changed(this, this.getRoom(id), oldFields, clearedFields, newFields);
     }
 
     setState(state) {
@@ -204,7 +204,7 @@ class Agent {
     observeRoom(id) {
         console.log('observe');
         const addedHandler = (id) => {
-            const room = this.ddp.collections.rooms[id];
+            const room = this.getRoom(id);
             if (room.black === this.id) {
                 this.color = 'B';
                 this.opponentId = room.white;
@@ -232,6 +232,18 @@ class Agent {
             this.roomObserver.stop();
             this.roomObserver = null;
             this.ddp.unsubscribe(this.roomsSubscriptionId);
+        }
+    }
+
+    getRoom(id) {
+        return this.ddp.collections.rooms[id];
+    }
+
+    getCurrentRoom() {
+        if (this.roomId) {
+            return this.getRoom(this.roomId);
+        } else {
+            return null;
         }
     }
 }

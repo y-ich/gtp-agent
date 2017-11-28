@@ -23,6 +23,15 @@ class AgentState {
         return this.prototype.LOBBY;
     }
 
+    static getFirstPlayState(agent, root) {
+        const whiteSen = root.HA && parseInt(root.HA) >= 2;
+        if (whiteSen ^ (agent.color === 'B')) { // 手番なら
+            return this.prototype.FIRST_MOVE;
+        } else {
+            return this.prototype.WAITING;
+        }
+    }
+
     static fromRoom(agent, room) {
         if (!didGreet(room, agent.id, 'start')) {
             if (isIn(room, agent.opponentId)) {
@@ -43,12 +52,7 @@ class AgentState {
             const [root] = jssgf.fastParse(room.game);
             const { num, node } = primaryLastNode(root);
             if (num === 0) {
-                const whiteSen = root.HA && parseInt(root.HA) >= 2;
-                if ((whiteSen && agent.color === 'W') || (!whiteSen && agent.color === 'B')) { // 手番なら
-                    return this.prototype.FIRST_MOVE;
-                } else {
-                    return this.prototype.WAITING;
-                }
+                return this.getFirstPlayState(agent, root);
             } else if (node[agent.color]) {
                 return this.prototype.WAITING;
             } else {
@@ -57,17 +61,13 @@ class AgentState {
         }
     }
 
-    constructor() {
-
-    }
+    constructor() {}
 
     async entry(agent) {
         console.log(this.constructor.name);
     }
 
-    async exit(agent) {
-
-    }
+    async exit(agent) {}
 
     async changed(agent, room, oldFields, clearedFields, newFields = {}) {
         if (!isIn(room, agent.opponentId)) {
@@ -81,9 +81,7 @@ class AgentState {
         }
     }
 
-    async timedOut(agent) {
-
-    }
+    async timedOut(agent) {}
 }
 
 class LobbyState extends AgentState {
@@ -116,15 +114,10 @@ class StartGreetingState extends AgentState {
 
     async timedOut(agent) {
         await agent.ddp.call('room.greet', [agent.roomId, 'start']);
-        const room = agent.ddp.collections.rooms[agent.roomId];
+        const room = agent.getCurrentRoom();
         const [root] = jssgf.fastParse(room.game);
         if (root._children.length === 0) { // 初手なら
-            const whiteSen = root.HA && parseInt(root.HA) >= 2;
-            if ((whiteSen && agent.color === 'W') || (!whiteSen && agent.color === 'B')) { // 手番なら
-                agent.setState(this.FIRST_MOVE);
-            } else {
-                agent.setState(this.WAITING);
-            }
+            agent.setState(this.constructor.getFirstPlayState(agent, root));
         } else {
             agent.setState(this.THINKING);
         }
@@ -147,7 +140,7 @@ class WaitingState extends AgentState {
     async entry(agent) {
         super.entry(agent);
         if (!agent.gtp) {
-            const room = agent.ddp.collections.rooms[agent.roomId];
+            const room = agent.getCurrentRoom();
             await agent.startGtp(room.game);
         }
     }
@@ -167,7 +160,7 @@ class WaitingState extends AgentState {
                 await agent.startGtp(room.game);
             }
             const [root] = jssgf.fastParse(room.game);
-            const { num, node } = primaryLastNode(root);
+            const node = jssgf.nthMoveNode(root, Infinity);
             if (!node[agent.color]) {
                 await agent.opponentPlay(root, node);
                 agent.setState(this.THINKING);
@@ -180,12 +173,12 @@ class ThinkingState extends AgentState {
     async entry(agent) {
         super.entry(agent);
         this.next = null;
-        const room = agent.ddp.collections.rooms[agent.roomId];
+        const room = agent.getCurrentRoom();
         if (!agent.gtp) {
             await agent.startGtp(room.game);
         }
         const [root] = jssgf.fastParse(room.game);
-        const { num, node } = primaryLastNode(root);
+        const node = jssgf.nthMoveNode(root, Infinity);
         const data = await agent.play(room.game);
         switch (data.result) {
             case 'PASS': {
