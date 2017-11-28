@@ -246,7 +246,7 @@ class EndGreetingState extends AgentState {
     async timedOut(agent) {
         console.log(agent.roomId);
         await agent.ddp.call('room.greet', [agent.roomId, 'end']);
-        await sleep(3000);
+        await sleep(6000);
         await agent.exitRoom();
         agent.setState(this.LOBBY);
     }
