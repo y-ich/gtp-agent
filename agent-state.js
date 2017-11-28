@@ -213,12 +213,12 @@ class ThinkingState extends AgentState {
     }
 
     async changed(agent, room, oldFields, clearedFields, newFields = {}) {
+        console.log('ThinkingState changed', newFields);
         if (newFields.counting) {
             agent.setState(this.COUNTING);
         } else if (newFields.result) {
-            console.log('pass3');
             this.setState(this.END_GREETING);
-        } else if (newFields.game) {
+        } else if (newFields.game && this.next) {
             agent.setState(this.next);
         }
     }
