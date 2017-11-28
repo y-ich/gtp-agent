@@ -70,13 +70,13 @@ class AgentState {
     async exit(agent) {}
 
     async changed(agent, room, oldFields, clearedFields, newFields = {}) {
-        if (!isIn(room, agent.opponentId)) {
+        if (newFields.mates && !isIn(room, agent.opponentId)) {
             await agent.stopGtp();
             await agent.exitRoom();
             agent.setState(this.LOBBY);
-        } else if (room.counting) {
+        } else if (newFields.counting) {
             agent.setState(this.COUNTING);
-        } else if (room.result) {
+        } else if (newFields.result) {
             agent.setState(this.END_GREETING);
         }
     }
