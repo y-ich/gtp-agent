@@ -217,7 +217,7 @@ class ThinkingState extends AgentState {
         if (newFields.counting) {
             agent.setState(this.COUNTING);
         } else if (newFields.result) {
-            this.setState(this.END_GREETING);
+            agent.setState(this.END_GREETING);
         } else if (newFields.game && this.next) {
             agent.setState(this.next);
         }
