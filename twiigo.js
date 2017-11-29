@@ -9,7 +9,7 @@ const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
 
 if (require.main === module) {
     const twiigo = new DDPPlus({ url: TWIIGO_SERVER });
-    const client = new ChatAgent(twiigo, 'twiigo2015');
+    const client = new ChatAgent(twiigo, 'twiigo2015', parseInt(process.argv[2] || '15'));
     twiigo.on('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.stop();

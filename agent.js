@@ -14,7 +14,7 @@ class Agent {
      * @param {object} selector - Meteor.usersからプレーヤを選択するセレクタ
      * @param {string} methods - DDPサーバ
      */
-    constructor(ddp, screenName, gtpName) {
+    constructor(ddp, screenName, byoyomi = 15, gtpName) {
         this.ddp = ddp;
         this.screenName = screenName;
         this.gtpName = gtpName;
@@ -23,7 +23,7 @@ class Agent {
         this.size = 19;
         this.color = null;
         this.num = 0;
-        this.byoyomi = process.env.NODE_ENV === 'production' ? 15 : 1;
+        this.byoyomi = byoyomi;
         this.gtp = null;
         this.roomsCursorOptions = { fields: {
             black: 1,

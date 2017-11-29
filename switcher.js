@@ -14,8 +14,8 @@ const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
 if (require.main === module) {
     const mimiaka = new DDPPlus({ url: MIMIAKA_SERVER });
     const twiigo = new DDPPlus({ url: TWIIGO_SERVER });
-    const winrate = new LeelaClient(mimiaka, parseInt(process.argv[2] || '1'));
-    const agent = new ChatAgent(twiigo, 'twiigo2015');
+    const winrate = new LeelaClient(mimiaka, parseInt(process.argv[3] || '1'));
+    const agent = new ChatAgent(twiigo, 'twiigo2015', parseInt(process.argv[2] || '15'));
     let winrateBusy = false;
 
     winrate.onTargetAdded = async function() {
