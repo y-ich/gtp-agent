@@ -22,7 +22,6 @@ class Agent {
         this.state = AgentState.initialState();
         this.size = 19;
         this.color = null;
-        this.num = 0;
         this.byoyomi = byoyomi;
         this.gtp = null;
         this.roomsCursorOptions = { fields: {
