@@ -73,7 +73,8 @@ class ChatAgent extends Agent {
             },
             $push: { kakoHistory: {
                 num: this.num,
-                winRate: data.winRate
+                winRate: data.winRate,
+                variations: data.variations
             }}
         }]).catch(function(reason) {
             console.log(reason);
