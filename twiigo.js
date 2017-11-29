@@ -17,6 +17,7 @@ if (require.main === module) {
         client.start();
     });
     twiigo.on('connect-error', async function(error) {
+        console.log('connect-error', error);
         await client.stop();
     });
     twiigo.connectWithRetry(1000, 60000);
