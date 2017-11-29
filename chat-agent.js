@@ -65,17 +65,14 @@ class ChatAgent extends Agent {
 
     async play(root, node) {
         const data = await super.play(root, node);
+        const log = Object.assign({ num: this.num }, data);
         data.color = this.color;
         await this.ddp.call('updateRooms', [this.roomId, {
             $set: {
                 kakoWinRate: data.winRate,
                 aiThought: data
             },
-            $push: { kakoHistory: {
-                num: this.num,
-                winRate: data.winRate,
-                variations: data.variations
-            }}
+            $push: { kakoHistory: log }
         }]).catch(function(reason) {
             console.log(reason);
         });
