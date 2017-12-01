@@ -217,7 +217,7 @@ class ThinkingState extends AgentState {
                 break;
             }
             case 'resign':
-                root.RE = `${jssgf.opponentOf(this.color)}+R`;
+                root.RE = `${jssgf.opponentOf(agent.color)}+R`;
                 this.next = this.STOP;
                 break;
             default: {
