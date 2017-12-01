@@ -29,7 +29,8 @@ class Agent {
             white: 1,
             game: 1,
             mates: 1,
-            greet: 1
+            greet: 1,
+            result: 1
         }};
         this.roomCursorOptions = { fields: {
             black: 1,
@@ -79,6 +80,7 @@ class Agent {
             console.log('already playing other game', this.roomId, id);
             return false;
         }
+        this.setState(this.state.ENTERING);
         if (await this.ddp.call('room.enter', [id, true])) {
             this.roomId = id;
             const room = this.getCurrentRoom();
@@ -88,6 +90,7 @@ class Agent {
             this.observeRoom(this.roomId);
             return true;
         } else {
+            this.setState(this.state.LOBBY);
             return false;
         }
     }

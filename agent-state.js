@@ -5,10 +5,21 @@ const { sleep, primaryLastNode } = require('./util.js');
 const { didGreet, isIn } = require('./helpers.js');
 
 
+function getTurn(sgf) {
+    const [root] = jssgf.fastParse(sgf);
+    const node = jssgf.nthMoveNode(root, Infinity);
+    if (root === node) {
+        return root.HA && parseInt(root.HA) >= 2 ? 'W' : 'B';
+    } else {
+        return node.W == null ? 'W' : 'B';
+    }
+}
+
 class AgentState {
     static init() {
         this.prototype.ERROR = new ErrorState();
         this.prototype.LOBBY = new LobbyState();
+        this.prototype.ENTERING = new EnteringState();
         this.prototype.NOT_GREET = new NotGreetState();
         this.prototype.START_GREETING = new StartGreetingState();
         this.prototype.WAITING = new WaitingState();
@@ -37,7 +48,7 @@ class AgentState {
             if (isIn(room, agent.opponentId)) {
                 return this.prototype.START_GREETING;
             } else {
-                // 相手が要る時に部屋に入る仕様なのでここはコールされないはず。NOT_GREET状態要らないか
+                // 相手が居る時に部屋に入る仕様なのでここはコールされないはず。NOT_GREET状態要らないか
                 return this.prototype.NOT_GREET;
             }
         } else if (room.counting) {
@@ -54,6 +65,7 @@ class AgentState {
             if (num === 0) {
                 return this.getFirstPlayState(agent, root);
             } else if (node[agent.color]) {
+                console.log('pass', node);
                 return this.prototype.WAITING;
             } else {
                 return this.prototype.THINKING;
@@ -86,11 +98,27 @@ class AgentState {
 
 class LobbyState extends AgentState {
     async changed(agent, room, oldFields, clearedFields, newFields = {}) {
-        const opponentId = room.black === agent.id ? room.white : room.black;
-        if (!isIn(room, agent.id) && isIn(room, opponentId)) {
-            await agent.enterRoom(room._id);
+        let color, opponentId;
+        if (room.black === agent.id) {
+            color = 'B';
+            opponentId = room.white;
+        } else {
+            color = 'W';
+            opponentId = room.black;
+        }
+        if (!isIn(room, agent.id) && !didGreet(room, agent.id, 'end')) {
+            if (isIn(room, opponentId) ||
+                (didGreet(room, agent.id, 'start') &&
+                !room.result &&
+                getTurn(room.game) === color)) {
+                    await agent.enterRoom(room._id);
+            }
         }
     }
+}
+
+class EnteringState extends AgentState {
+    async changed() {}
 }
 
 class ErrorState extends AgentState {
