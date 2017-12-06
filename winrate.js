@@ -2,7 +2,9 @@
 /* global module exports */
 const os = require('os');
 const jssgf = require('jssgf');
+console.log('pass-1');
 const { GtpLeela, coord2move } = require('gtp-wrapper');
+console.log('pass0');
 const { DDPPlus } = require('ddp-plus');
 const { primaryLastNode } = require('./util.js');
 
