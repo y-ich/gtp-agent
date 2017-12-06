@@ -234,9 +234,11 @@ if (require.main === module) {
     process.on('uncaughtException', function (err) {
         console.log('uncaughtException: ', err);
     });
-
+    console.log('pass1');
     const ddp = new DDPPlus({ url: MIMIAKA_SERVER });
+    console.log('pass2');
     const client = new LeelaClient(ddp, parseInt(process.argv[2] || '1'));
+    console.log('pass3');
     ddp.on('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.destroy();
