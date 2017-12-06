@@ -22,7 +22,7 @@ if (require.main === module) {
         agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
         await agent.stop();
         twiigo.stopRetry();
-        twiigo.stop();
+        twiigo.close();
         winrateBusy = true;
     }
     winrate.onTargetRemoved = async function() {
