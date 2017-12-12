@@ -55,27 +55,19 @@ if (require.main === module) {
     });
 
     mimiaka.connectWithRetry(1000, 60000);
-    twiigo.connectWithRetry(1000, 60000, function() {
-        return new Promise(function(res, rej) {
-            MongoClient.connect(process.env.TWIIGO_MONGO_URL, (error, db) => {
-                if (error) {
-                    res(false);
-                    return;
-                }
-                const Constants = db.collection('constants');
-                if (!Constants) {
-                    res(false);
-                    return;
-                }
-                Constants.findOne({ category: 'heroku-state' }, function(error, item) {
-                    if (error || !item) {
-                        res(false);
-                        return;
-                    }
-                    console.log('heroku-state', item.sleep);
-                    res(!item.sleep);
-                });
-            });
-        });
+    twiigo.connectWithRetry(1000, 60000, async function() {
+        console.log('condition');
+        try {
+            const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
+            const Constants = db.collection('constants');
+            if (!Constants) {
+                return false;
+            }
+            const item = await Constants.findOne({ category: 'heroku-state' });
+            console.log('item', item);
+            return item == null || !item.sleep;
+        } catch (e) {
+            return false;
+        }
     });
 }
