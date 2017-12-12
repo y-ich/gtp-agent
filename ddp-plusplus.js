@@ -9,13 +9,16 @@ async function sleep(time) {
 
 class DDPPlusPlus extends DDPPlus {
     async connectWithRetry(initialInterval, maxInterval, condition) {
+        if (condition !== undefined) {
+            this.condition = condition;
+        }
         if (initialInterval) {
             this.initialInterval = this.interval = initialInterval;
         }
         if (maxInterval) {
             this.maxInterval = maxInterval;
         }
-        if (typeof condition !== 'function' || await condition()) {
+        if (typeof this.condition !== 'function' || await this.condition()) {
             this.connect(async (error, wasReconnect) => {
                 if (error) {
                     await Promise.all(this.handlers['connect-error'].map(e => e(error)));
