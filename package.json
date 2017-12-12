@@ -10,7 +10,8 @@
   "dependencies": {
     "ddp-plus": "^0.0.1",
     "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
-    "jssgf": "^0.3.8"
+    "jssgf": "^0.3.8",
+    "mongodb": "^2.2.33"
   },
   "devDependencies": {},
   "scripts": {
