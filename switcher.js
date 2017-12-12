@@ -72,6 +72,7 @@ if (require.main === module) {
                         res(false);
                         return;
                     }
+                    console.log('heroku-state', item.sleep);
                     res(!item.sleep);
                 });
             });
