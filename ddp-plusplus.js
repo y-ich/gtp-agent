@@ -19,6 +19,7 @@ class DDPPlusPlus extends DDPPlus {
             this.maxInterval = maxInterval;
         }
         if (typeof this.condition !== 'function' || await this.condition()) {
+            console.log('try to connect');
             this.connect(async (error, wasReconnect) => {
                 if (error) {
                     this.emit('connect-error', error);
