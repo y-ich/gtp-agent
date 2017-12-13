@@ -32,17 +32,17 @@ if (require.main === module) {
         winrateBusy = false;
         twiigo.connectWithRetry(1000, 60000);
     }
-    mimiaka.on('connect-success', async function(wasReconnect) {
+    mimiaka.addListener('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await winrate.destroy();
         }
         winrate.start();
     });
-    mimiaka.on('connect-error', async function(error) {
+    mimiaka.addListener('socket-close', async function(code, reason) {
         await winrate.destroy();
     });
 
-    twiigo.on('connect-success', async function(wasReconnect) {
+    twiigo.addListener('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await agent.stop();
         }
@@ -50,13 +50,16 @@ if (require.main === module) {
             agent.start();
         }
     });
-    twiigo.on('connect-error', async function(error) {
-        await agent.stop();
+    twiigo.addListener('connect-error', async function(error) {
+        console.log('connect-error', error);
     });
-
+    twiigo.addListener('socket-close', async function(code, reason) {
+        console.log('socket-close', reason);
+        await agent.stop();
+        twiigo.connectWithRetry();
+    });
     mimiaka.connectWithRetry(1000, 60000);
     twiigo.connectWithRetry(1000, 60000, async function() {
-        console.log('condition');
         try {
             const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
             const Constants = db.collection('constants');
@@ -64,7 +67,6 @@ if (require.main === module) {
                 return false;
             }
             const item = await Constants.findOne({ category: 'heroku-state' });
-            console.log('item', item);
             return item == null || !item.sleep;
         } catch (e) {
             return false;

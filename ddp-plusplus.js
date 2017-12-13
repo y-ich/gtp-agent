@@ -21,7 +21,7 @@ class DDPPlusPlus extends DDPPlus {
         if (typeof this.condition !== 'function' || await this.condition()) {
             this.connect(async (error, wasReconnect) => {
                 if (error) {
-                    await Promise.all(this.handlers['connect-error'].map(e => e(error)));
+                    this.emit('connect-error', error);
                     if (!this.initialInterval) {
                         return;
                     }
@@ -34,9 +34,7 @@ class DDPPlusPlus extends DDPPlus {
                     if (this.initialInterval) {
                         this.interval = this.initialInterval;
                     }
-                    for (const e of this.handlers['connect-success']) {
-                        e(wasReconnect);
-                    }
+                    this.emit('connect-success', wasReconnect);
                 }
             });
         } else {
