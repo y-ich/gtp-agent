@@ -65,7 +65,6 @@ class AgentState {
             if (num === 0) {
                 return this.getFirstPlayState(agent, root);
             } else if (node[agent.color]) {
-                console.log('pass', node);
                 return this.prototype.WAITING;
             } else {
                 return this.prototype.THINKING;
@@ -181,7 +180,6 @@ class WaitingState extends AgentState {
         } else if (newFields.counting) {
             agent.setState(this.COUNTING);
         } else if (newFields.result) {
-            console.log('pass2');
             agent.setState(this.END_GREETING);
         } else if (newFields.game) {
             if (!agent.gtp) {
@@ -235,13 +233,12 @@ class ThinkingState extends AgentState {
         try {
             await agent.ddp.call('room.updateGame', [agent.roomId, jssgf.stringify([root])]);
         } catch (e) {
-            console.log(e);
+            console.log('ThinkingState', e);
             agent.setState(this.ERROR);
         }
     }
 
     async changed(agent, room, oldFields, clearedFields, newFields = {}) {
-        console.log('ThinkingState changed', newFields);
         if (newFields.counting) {
             agent.setState(this.COUNTING);
         } else if (newFields.result) {
@@ -272,7 +269,6 @@ class EndGreetingState extends AgentState {
     }
 
     async timedOut(agent) {
-        console.log(agent.roomId);
         await agent.ddp.call('room.greet', [agent.roomId, 'end']);
         await sleep(6000);
         await agent.exitRoom();

@@ -76,7 +76,7 @@ class ChatAgent extends Agent {
             },
             $push: { kakoHistory: log }
         }]).catch(function(reason) {
-            console.log(reason);
+            console.log('play updateRooms', reason);
         });
         return data;
     }
