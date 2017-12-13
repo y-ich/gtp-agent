@@ -87,7 +87,6 @@ class LeelaClient {
     }
 
     async destroy() {
-        console.log('destroy');
         await this.stopUpdateWinrate();
         if (this.constantsSubscriptionId) {
             this.ddp.unsubscribe(this.constantsSubscriptionId);
@@ -214,7 +213,6 @@ class LeelaClient {
     }
 
     async stopUpdateWinrate() {
-        console.log('stopUpdateWinrate');
         if (this.gtp) {
             await this.gtp.terminate();
             this.gtp = null;
@@ -237,13 +235,13 @@ if (require.main === module) {
 
     const ddp = new DDPPlus({ url: MIMIAKA_SERVER });
     const client = new LeelaClient(ddp, parseInt(process.argv[2] || '1'));
-    ddp.on('connect-success', async function(wasReconnect) {
+    ddp.addListener('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.destroy();
         }
         client.start();
     });
-    ddp.on('connect-error', async function(error) {
+    ddp.addListener('socket-close', async function(code, reason) {
         await client.destroy();
     });
     ddp.connectWithRetry(1000, 60000);

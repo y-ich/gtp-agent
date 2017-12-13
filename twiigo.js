@@ -10,14 +10,14 @@ const TWIIGO_SERVER = process.env.NODE_ENV === 'production' ?
 if (require.main === module) {
     const twiigo = new DDPPlus({ url: TWIIGO_SERVER });
     const client = new ChatAgent(twiigo, 'twiigo2015', parseInt(process.argv[2] || '15'));
-    twiigo.on('connect-success', async function(wasReconnect) {
+    twiigo.addListener('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.stop();
         }
         client.start();
     });
-    twiigo.on('connect-error', async function(error) {
-        console.log('connect-error', error);
+    twiigo.addListener('socket-close', async function(code, reason) {
+        console.log('socket-close', reason);
         await client.stop();
     });
     twiigo.connectWithRetry(1000, 60000);
