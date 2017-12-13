@@ -43,6 +43,7 @@ if (require.main === module) {
     });
 
     twiigo.addListener('connect-success', async function(wasReconnect) {
+        console.log('connect-success');
         if (wasReconnect) {
             await agent.stop();
         }

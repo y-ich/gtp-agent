@@ -185,7 +185,7 @@ class Agent {
     }
 
     observeRooms() {
-        console.log('observe');
+        console.log('observeRooms');
         const handler = (id, oldFields, clearedFields, newFields) => {
             this.changed(id, oldFields, clearedFields, newFields).catch(function (reason) {
                 console.log('behave error', reason);
@@ -204,7 +204,7 @@ class Agent {
     }
 
     observeRoom(id) {
-        console.log('observe');
+        console.log('observeRoom');
         const addedHandler = (id) => {
             const room = this.getRoom(id);
             if (room.black === this.id) {
