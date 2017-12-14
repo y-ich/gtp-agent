@@ -8,10 +8,11 @@
     "winrate": "./winrate.js"
   },
   "dependencies": {
-    "ddp-plus": "^0.0.3",
+    "ddp-plus": "^0.0.4",
     "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
     "jssgf": "^0.3.8",
-    "mongodb": "^2.2.33"
+    "mongodb": "^2.2.33",
+    "sleep-promise": "^2.0.0"
   },
   "devDependencies": {},
   "scripts": {

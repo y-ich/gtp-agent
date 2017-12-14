@@ -1,11 +1,7 @@
 /* global exports */
+const sleep = require('sleep-promise');
 const { DDPPlus } = require('ddp-plus');
 
-async function sleep(time) {
-    return new Promise(function(res, rej) {
-        setTimeout(res, time);
-    });
-}
 
 class DDPPlusPlus extends DDPPlus {
     async connectWithRetry(initialInterval, maxInterval, condition) {
@@ -19,9 +15,7 @@ class DDPPlusPlus extends DDPPlus {
             this.maxInterval = maxInterval;
         }
         if (typeof this.condition !== 'function' || await this.condition()) {
-            console.log('try to connect');
             this.connect(async (error, wasReconnect) => {
-                console.log('connected');
                 if (error) {
                     this.emit('connect-error', error);
                     if (!this.initialInterval) {
