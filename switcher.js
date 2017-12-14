@@ -66,11 +66,14 @@ if (require.main === module) {
             const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
             const Constants = db.collection('constants');
             if (!Constants) {
+                console.log('no Constants');
                 return false;
             }
             const item = await Constants.findOne({ category: 'heroku-state' });
+            console.log('item', item == null || !item.sleep);
             return item == null || !item.sleep;
         } catch (e) {
+            console.log('DB error');
             return false;
         }
     });
