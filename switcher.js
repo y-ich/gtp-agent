@@ -57,6 +57,7 @@ if (require.main === module) {
     twiigo.addListener('socket-close', async function(code, reason) {
         console.log('socket-close', reason);
         await agent.stop();
+        twiigo.close();
         twiigo.connectWithRetry();
     });
     mimiaka.connectWithRetry(1000, 60000);

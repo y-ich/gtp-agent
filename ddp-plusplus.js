@@ -21,6 +21,7 @@ class DDPPlusPlus extends DDPPlus {
         if (typeof this.condition !== 'function' || await this.condition()) {
             console.log('try to connect');
             this.connect(async (error, wasReconnect) => {
+                console.log('connected');
                 if (error) {
                     this.emit('connect-error', error);
                     if (!this.initialInterval) {
