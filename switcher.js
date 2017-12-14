@@ -28,7 +28,6 @@ if (require.main === module) {
         winrateBusy = true;
     }
     winrate.onTargetRemoved = async function() {
-        console.log('onTargetRemoved');
         winrateBusy = false;
         twiigo.connectWithRetry(1000, 60000);
     }
@@ -43,7 +42,6 @@ if (require.main === module) {
     });
 
     twiigo.addListener('connect-success', async function(wasReconnect) {
-        console.log('connect-success', wasReconnect);
         if (wasReconnect) {
             await agent.stop();
         }
@@ -51,11 +49,8 @@ if (require.main === module) {
             agent.start();
         }
     });
-    twiigo.addListener('connect-error', async function(error) {
-        console.log('connect-error', error);
-    });
+
     twiigo.addListener('socket-close', async function(code, reason) {
-        console.log('socket-close', reason);
         await agent.stop();
         twiigo.close();
         twiigo.connectWithRetry();
@@ -66,14 +61,11 @@ if (require.main === module) {
             const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
             const Constants = db.collection('constants');
             if (!Constants) {
-                console.log('no Constants');
                 return false;
             }
             const item = await Constants.findOne({ category: 'heroku-state' });
-            console.log('item', item == null || !item.sleep);
             return item == null || !item.sleep;
         } catch (e) {
-            console.log('DB error');
             return false;
         }
     });
