@@ -44,6 +44,10 @@ class Agent {
     }
 
     start() {
+        const handleConstants = this.handleConstants.bind(this);
+        this.constantsObserver = this.ddp.observe('constants', handleConstants, handleConstants);
+        this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
+
         this.selfObserver = this.ddp.observe('users', undefined, this.userChanged);
         this.selfSubscriptionId = this.ddp.subscribe('users', [{ 'twitter.profile.screen_name': this.screenName }], async () => {
             const ids = Object.keys(this.ddp.collections['users']);
@@ -247,6 +251,14 @@ class Agent {
         } else {
             return null;
         }
+    }
+
+    handleConstants(id) {
+        this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
+        if (this.memoryQuotaExceeded) {
+            this.stopGtp();
+        }
+        console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
     }
 }
 

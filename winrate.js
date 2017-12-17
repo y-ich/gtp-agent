@@ -81,9 +81,9 @@ class LeelaClient {
             }
         ]);
 
-        const observeConstants = this.observeConstants.bind(this);
-        this.constantsObserver = this.ddp.observe('constants', observeConstants, observeConstants);
-        this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: 'winrate' }]);
+        const handleConstants = this.handleConstants.bind(this);
+        this.constantsObserver = this.ddp.observe('constants', handleConstants, handleConstants);
+        this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
     }
 
     async destroy() {
@@ -219,9 +219,9 @@ class LeelaClient {
         }
     }
 
-    observeConstants(id) {
+    handleConstants(id) {
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
-        console.log('observeConstants: %s, %s', id, this.memoryQuotaExceeded);
+        console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
     }
 }
 
