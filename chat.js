@@ -35,7 +35,9 @@ const chat = {
             lang,
             gender: user.profile.gender
         }, message], function(error) {
-            console.log(error);
+            if (error) {
+                console.log(error);
+            }
         });
     }
 }
