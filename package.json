@@ -8,6 +8,7 @@
     "winrate": "./winrate.js"
   },
   "dependencies": {
+    "child-process-promise": "^2.2.1",
     "ddp-plus": "^0.0.4",
     "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
     "jssgf": "^0.3.8",

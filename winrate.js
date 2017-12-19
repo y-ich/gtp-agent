@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /* global module exports */
 const os = require('os');
+const execFile = require('child-process-promise');
 const jssgf = require('jssgf');
 const { GtpLeela, coord2move } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
@@ -153,7 +154,7 @@ class LeelaClient {
         await this.stopUpdateWinrate();
         if (this.memoryQuotaExceeded) {
             await new Promise((res, rej) => {
-                this.ddp.call('resetMemoryQuotaExceeded', [], function(e, r) {
+                this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
                     if (e) {
                         rej(e);
                     } else {
@@ -219,9 +220,14 @@ class LeelaClient {
         }
     }
 
-    handleConstants(id) {
+    async handleConstants(id) {
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
-        console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
+        if (this.memoryQuotaExceeded) {
+            console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
+            const { stdout, stderr } = await execFile('ps', ['ux', '--sort', '-rss']);
+            console.log(stdout);
+            console.log(stderr);
+        }
     }
 }
 

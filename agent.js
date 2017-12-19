@@ -1,5 +1,6 @@
 /* global exports */
 const os = require('os');
+const execFile = require('child-process-promise');
 const { move2coord, GtpClient } = require('gtp-wrapper');
 const { chat } = require('./chat.js');
 const { AgentState } = require('./agent-state.js');
@@ -41,6 +42,7 @@ class Agent {
             counting: 1,
             result: 1
         }};
+        this.memoryQuotaExceeded = false;
     }
 
     start() {
@@ -150,6 +152,18 @@ class Agent {
         if (this.gtp) {
             await this.gtp.terminate();
             this.gtp = null;
+            if (this.memoryQuotaExceeded) {
+                await new Promise((res, rej) => {
+                    this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
+                        if (e) {
+                            rej(e);
+                        } else {
+                            res(r);
+                        }
+                    });
+                });
+                this.memoryQuotaExceeded = false;
+            }
         }
     }
 
@@ -253,12 +267,16 @@ class Agent {
         }
     }
 
-    handleConstants(id) {
+    async handleConstants(id) {
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
-        if (this.memoryQuotaExceeded) {
-            this.stopGtp();
-        }
         console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
+        if (this.memoryQuotaExceeded) {
+            const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
+            console.log('handleConstants');
+            console.log(stdout);
+            console.log(stderr);
+            await this.stopGtp();
+        }
     }
 }
 
