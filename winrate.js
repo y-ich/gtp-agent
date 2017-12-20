@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /* global module exports */
 const os = require('os');
-const execFile = require('child-process-promise');
+const { execFile } = require('child-process-promise');
 const jssgf = require('jssgf');
 const { GtpLeela, coord2move } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
@@ -224,7 +224,7 @@ class LeelaClient {
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
         if (this.memoryQuotaExceeded) {
             console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
-            const { stdout, stderr } = await execFile('ps', ['ux', '--sort', '-rss']);
+            const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
             console.log(stdout);
             console.log(stderr);
         }
