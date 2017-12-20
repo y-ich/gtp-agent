@@ -34,6 +34,7 @@ class LeelaClient {
     constructor(ddp, nth) {
         this.ddp = ddp;
         this.nth = nth;
+        console.log('LeelaClient nth %d', this.nth);
         this.records = [];
         this.gtp = null;
         this.sgf = null;
