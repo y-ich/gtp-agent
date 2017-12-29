@@ -207,7 +207,8 @@ class ThinkingState extends AgentState {
         const node = jssgf.nthMoveNode(root, Infinity);
         const data = await agent.play(room.game);
         switch (data.result) {
-            case 'PASS': {
+            case 'PASS':
+            case 'pass': {
                 const next = { _children: [] };
                 next[agent.color] = '';
                 node._children.push(next);
