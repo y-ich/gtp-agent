@@ -42,7 +42,6 @@ class Agent {
             counting: 1,
             result: 1
         }};
-        this.memoryQuotaExceeded = false;
     }
 
     start() {
@@ -152,18 +151,6 @@ class Agent {
         if (this.gtp) {
             await this.gtp.terminate();
             this.gtp = null;
-            if (this.memoryQuotaExceeded) {
-                await new Promise((res, rej) => {
-                    this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
-                        if (e) {
-                            rej(e);
-                        } else {
-                            res(r);
-                        }
-                    });
-                });
-                this.memoryQuotaExceeded = false;
-            }
         }
     }
 
@@ -268,14 +255,23 @@ class Agent {
     }
 
     async handleConstants(id) {
-        this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
-        console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
-        if (this.memoryQuotaExceeded) {
+        const memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
+        console.log('handleConstants: %s, %s', id, memoryQuotaExceeded);
+        if (memoryQuotaExceeded) {
             const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
             console.log('handleConstants');
             console.log(stdout);
             console.log(stderr);
             await this.stopGtp();
+            await new Promise((res, rej) => {
+                this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
+                    if (e) {
+                        rej(e);
+                    } else {
+                        res(r);
+                    }
+                });
+            });
         }
     }
 }
