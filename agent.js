@@ -25,6 +25,7 @@ class Agent {
         this.color = null;
         this.byoyomi = byoyomi;
         this.gtp = null;
+        this.stoppingGtp = false;
         this.roomsCursorOptions = { fields: {
             black: 1,
             white: 1,
@@ -152,6 +153,7 @@ class Agent {
     async stopGtp() {
         console.log('stopGtp');
         if (this.gtp) {
+            this.stoppingGtp = true;
             await this.gtp.terminate();
             this.gtp = null;
         }
@@ -167,10 +169,19 @@ class Agent {
                 if (e.message === 'This socket is closed.') {
                     throw new Error('no gtp command', 'COMMAND not found');
                 } else {
+                    console.log(e);
                     switch (e.signal) {
                         case 'SIGSEGV':
-                        console.log(e);
                         await this.startGtp(sgf);
+                        break;
+                        case 'SIGINT':
+                        if (this.stoppingGtp) { // 意図的なSIGINTなら終了
+                            console.log('SIGINT', this.state.getName());
+                            this.stoppingGtp = false;
+                            throw e;
+                        } else { // 意図的でないSIGINTならリトライ
+                            await this.startGtp(sgf);
+                        }
                         break;
                         default:
                         throw e;

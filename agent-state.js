@@ -74,8 +74,12 @@ class AgentState {
 
     constructor() {}
 
+    getName() {
+        return this.constructor.name;
+    }
+
     async entry(agent) {
-        console.log(this.constructor.name);
+        console.log(this.getName());
     }
 
     async exit(agent) {}
