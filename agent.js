@@ -71,9 +71,11 @@ class Agent {
     }
 
     async stop() {
+        console.log('stop');
         await this.stopGtp();
+        await this.exitRoom();
+        this.setState(this.state.LOBBY);
         this.stopObserveRooms();
-        this.stopObserveRoom();
         if (this.selfObserver) {
             this.selfObserver.stop();
         }
@@ -148,6 +150,7 @@ class Agent {
     }
 
     async stopGtp() {
+        console.log('stopGtp');
         if (this.gtp) {
             await this.gtp.terminate();
             this.gtp = null;
