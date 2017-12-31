@@ -150,10 +150,12 @@ class Agent {
         }
     }
 
-    async stopGtp() {
+    async stopGtp(restart = true) {
         console.log('stopGtp');
         if (this.gtp) {
-            this.stoppingGtp = true;
+            if (!restart) {
+                this.stoppingGtp = true;
+            }
             await this.gtp.terminate();
             this.gtp = null;
         }
@@ -276,7 +278,7 @@ class Agent {
             console.log('handleConstants');
             console.log(stdout);
             console.log(stderr);
-            await this.stopGtp();
+            await this.stopGtp(true);
             await new Promise((res, rej) => {
                 this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
                     if (e) {
