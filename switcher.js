@@ -64,6 +64,7 @@ if (require.main === module) {
                 return false;
             }
             const item = await Constants.findOne({ category: 'heroku-state' });
+            console.log('connectWithRetry', item);
             return item == null || !item.sleep;
         } catch (e) {
             return false;
