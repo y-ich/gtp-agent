@@ -43,11 +43,11 @@ class Agent {
             counting: 1,
             result: 1
         }};
+        this.handleConstants = this.handleConstants.bind(this);
     }
 
     start() {
-        const handleConstants = this.handleConstants.bind(this);
-        this.constantsObserver = this.ddp.observe('constants', handleConstants, handleConstants);
+        this.constantsObserver = this.ddp.observe('constants', this.handleConstants, this.handleConstants);
         this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
 
         this.selfObserver = this.ddp.observe('users', undefined, this.userChanged);
@@ -81,6 +81,7 @@ class Agent {
             this.selfObserver.stop();
         }
         this.ddp.unsubscribe(this.selfSubscriptionId);
+        this.ddp.unsubscribe(this.constantsSubscriptionId);
     }
 
     async enterRoom(id) {
@@ -271,23 +272,27 @@ class Agent {
     }
 
     async handleConstants(id) {
-        const memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
-        console.log('handleConstants: %s, %s', id, memoryQuotaExceeded);
-        if (memoryQuotaExceeded) {
-            const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
-            console.log('handleConstants');
-            console.log(stdout);
-            console.log(stderr);
-            await this.stopGtp(true);
-            await new Promise((res, rej) => {
-                this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
-                    if (e) {
-                        rej(e);
-                    } else {
-                        res(r);
-                    }
+        try {
+            const memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
+            console.log('handleConstants: %s, %s', id, memoryQuotaExceeded);
+            if (memoryQuotaExceeded) {
+                const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
+                console.log('handleConstants');
+                console.log(stdout);
+                console.log(stderr);
+                await this.stopGtp(true);
+                await new Promise((res, rej) => {
+                    this.ddp.call('resetMemoryQuotaExceeded', [process.env.HEROKU_APP_NAME], function(e, r) {
+                        if (e) {
+                            rej(e);
+                        } else {
+                            res(r);
+                        }
+                    });
                 });
-            });
+            }
+        } catch(e) {
+            console.log(e);
         }
     }
 }
