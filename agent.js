@@ -172,14 +172,11 @@ class Agent {
                 if (e.message === 'This socket is closed.') {
                     throw new Error('no gtp command', 'COMMAND not found');
                 } else {
+                    console.log(this.state.getName());
                     console.log(e);
                     switch (e.signal) {
-                        case 'SIGSEGV':
-                        await this.startGtp(sgf);
-                        break;
                         case 'SIGINT':
                         if (this.stoppingGtp) { // 意図的なSIGINTなら終了
-                            console.log('SIGINT', this.state.getName());
                             this.stoppingGtp = false;
                             throw e;
                         } else { // 意図的でないSIGINTならリトライ
@@ -187,7 +184,7 @@ class Agent {
                         }
                         break;
                         default:
-                        throw e;
+                        await this.startGtp(sgf);
                     }
                 }
             }
