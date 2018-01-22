@@ -29,6 +29,7 @@ function getTurn(node, root) {
     }
 }
 
+const PS_OPTIONS = process.env.HEROKU_APP_NAME ? ['xl', '--sort', '-rss'] : ['xl', '-m'];
 
 class LeelaClient {
     constructor(ddp, nth) {
@@ -227,7 +228,7 @@ class LeelaClient {
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
         if (this.memoryQuotaExceeded) {
             console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
-            const { stdout, stderr } = await execFile('ps', ['xl', '--sort', '-rss']);
+            const { stdout, stderr } = await execFile('ps', PS_OPTIONS);
             console.log(stdout);
             console.log(stderr);
         }
