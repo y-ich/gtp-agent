@@ -126,7 +126,8 @@ class LeelaClient {
 
     async updated(id) {
         if (this.records[this.nth - 1] && this.records[this.nth - 1].id === id) {
-            console.log('updated', id)
+            console.log('updated', id);
+            console.log(this.records);
             await this.keepUpdateWinrate(id);
         }
     }
