@@ -107,6 +107,7 @@ class LeelaClient {
 
     async added(id) {
         const target = this.records[this.nth - 1];
+        console.log(this.ddp.collections.records[id]);
         this.records.push({
             id,
             createdAt: this.ddp.collections.records[id].createdAt
