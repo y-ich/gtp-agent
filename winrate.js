@@ -80,7 +80,11 @@ class LeelaClient {
             {
                 sort: { createdAt: 1 },
                 limit: this.nth,
-                fields: { sgf: 1, simulation: 1 }
+                fields: {
+                    sgf: 1,
+                    simulation: 1,
+                    createdAt: 1
+                }
             }
         ]);
 
@@ -107,7 +111,6 @@ class LeelaClient {
 
     async added(id) {
         const target = this.records[this.nth - 1];
-        console.log(this.ddp.collections.records[id]);
         this.records.push({
             id,
             createdAt: this.ddp.collections.records[id].createdAt
@@ -128,7 +131,6 @@ class LeelaClient {
     async updated(id) {
         if (this.records[this.nth - 1] && this.records[this.nth - 1].id === id) {
             console.log('updated', id);
-            console.log(this.records);
             await this.keepUpdateWinrate(id);
         }
     }
