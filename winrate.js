@@ -129,8 +129,9 @@ class LeelaClient {
     }
 
     async updated(id) {
-        if (this.records[this.nth - 1] && this.records[this.nth - 1].id === id) {
-            console.log('updated', id);
+        const record = this.records[this.nth - 1];
+        if (record && record.id === id) {
+            // ここはsimulationが更新される度に呼ばれる
             await this.keepUpdateWinrate(id);
         }
     }
@@ -156,7 +157,7 @@ class LeelaClient {
     async keepUpdateWinrate(id) {
         const record = this.ddp.collections.records[id];
         if (this.sgf === record.sgf) {
-            return;
+            return; // simulationの更新の時は何もしない
         }
         console.log('keepUpdateWinrate', id);
         await this.stopUpdateWinrate();
