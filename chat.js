@@ -2,8 +2,8 @@
 const DDPClient = require('ddp');
 
 const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
-    'wss://mimiaka-chat.herokuapp.com/websocket' :
-    'ws://localhost:5000/websocket';
+    'wss://twiigo.herokuapp.com/websocket' :
+    'ws://localhost:4000/websocket';
 
 const chat = {
     chatServer: null,
