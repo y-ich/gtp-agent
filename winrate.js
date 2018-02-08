@@ -180,7 +180,7 @@ class LeelaClient {
         const rule = root.RU || (root.KM === '7.5' ? 'Chinese' : 'Japanese');
         const { num, node } = primaryLastNode(root);
         const turn = getTurn(node, root);
-        const options = ['--threads', os.cpus().length - 1];
+        const options = ['--nobook', '--threads', os.cpus().length - 1];
         if (rule === 'Japanese') {
             options.push('--komiadjust');
         }
