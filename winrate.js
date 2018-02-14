@@ -12,6 +12,9 @@ const MIMIAKA_SERVER = process.env.NODE_ENV === 'production' ?
     'wss://mimiaka.herokuapp.com/websocket' :
     'ws://localhost:3000/websocket';
 
+if (!process.env.HEROKU_APP_NAME) {
+    process.env.HEROKU_APP_NAME = 'localhost';
+}
 
 function getTurn(node, root) {
     if (node.B != null) {
@@ -27,6 +30,12 @@ function getTurn(node, root) {
     } else {
         throw new Error('unkonwn');
     }
+}
+
+function normalizeMove(move) {
+    move = move.replace(/^[a-i]/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
+    move = move.replace(/[k-s]$/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
+    return move;
 }
 
 const PS_OPTIONS = process.env.HEROKU_APP_NAME ? ['xl', '--sort', '-rss'] : ['xl', '-m'];
@@ -197,9 +206,13 @@ class LeelaClient {
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
                 const pv = match[3].trim().split(/\s+/).map(c => coord2move(c, size));
                 this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, nodes]);
-                if (pv[0] !== lastForecast) {
-                    this.ddp.call('forecast', [id, num, pv[0], true]);
-                    lastForecast = pv[0];
+                let forecast = pv[0];
+                if (num == 0) {
+                    forecast = normalizeMove(forecast);
+                }
+                if (forecast !== lastForecast) {
+                    this.ddp.call('forecast', [id, num, forecast, true]);
+                    lastForecast = forecast;
                 }
             } else {
                 console.log('stderr: %s', line);
@@ -213,8 +226,7 @@ class LeelaClient {
         const data = await promise;
         let forecast = coord2move(data.result, size);
         if (num == 0) {
-            forecast = forecast.replace(/^[a-i]/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
-            forecast = forecast.replace(/[k-s]$/, e => String.fromCharCode('j'.charCodeAt(0) * 2 - e.charCodeAt(0)));
+            forecast = normalizeMove(forecast);
         }
         if (forecast !== lastForecast) {
             this.ddp.call('forecast', [id, num, forecast, true]);
