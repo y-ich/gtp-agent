@@ -146,6 +146,7 @@ class LeelaClient {
     }
 
     async removed(id) {
+        console.log('removed');
         const [removed] = this.records.filter(e => e.id === id);
         if (!removed) {
             console.log('removed: ないものがremoveされた');
@@ -156,8 +157,10 @@ class LeelaClient {
         if (this.records[this.nth - 1] !== target) {
             await this.stopUpdateWinrate();
             if (this.records[this.nth - 1]) {
+                console.log('target changed');
                 await this.keepUpdateWinrate(this.records[this.nth - 1].id);
             } else if (this.onTargetRemoved) {
+                console.log('target changed');
                 await this.onTargetRemoved();
             }
         }
