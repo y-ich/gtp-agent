@@ -108,9 +108,10 @@ class Agent {
         console.log('exitRoom');
         await this.stopObserveRoom();
         chat.disableChat(this.roomId);
-        console.log(this.ddp, this.roomId);
-        await this.ddp.call('room.exit', [this.roomId, true]);
-        this.roomId = null;
+        if (this.roomId) {
+            await this.ddp.call('room.exit', [this.roomId, true]);
+            this.roomId = null;
+        }
         this.observeRooms();
         return true;
     }
