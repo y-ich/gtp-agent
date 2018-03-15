@@ -213,6 +213,7 @@ class Agent {
             });
         }
         this.roomsObserver = this.ddp.observe('rooms', handler, handler);
+        console.log(this.roomsSelector, this.roomsCursorOptions);
         this.roomsSubscriptionId = this.ddp.subscribe('rooms', [this.roomsSelector, this.roomsCursorOptions]);
     }
 
