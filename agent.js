@@ -106,14 +106,17 @@ class Agent {
 
     async exitRoom() {
         console.log('exitRoom');
-        await this.stopObserveRoom();
-        chat.disableChat(this.roomId);
-        if (this.roomId) {
+        if (this.id) {
+            await this.stopObserveRoom();
+            chat.disableChat(this.roomId);
             await this.ddp.call('room.exit', [this.roomId, true]);
             this.roomId = null;
+            this.observeRooms();
+            return true;
+        } else {
+            console.log('agent has not start yet.');
+            return false;
         }
-        this.observeRooms();
-        return true;
     }
 
     async startGtp(sgf) {
