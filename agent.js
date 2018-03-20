@@ -57,7 +57,12 @@ class Agent {
                 console.log('user selector is wrong.');
             }
             this.id = ids[0];
-            await this.ddp.call('setUserId', [this.id]);
+            try {
+                await this.ddp.call('setUserId', [this.id]);
+            } catch (e) {
+                console.log('setUserId', e);
+                return;
+            }
             this.user = this.ddp.collections['users'][this.id];
             this.roomsSelector = { $or: ['black', 'white'].map(e => this.gtpName ? {
                 [e]: this.id,
