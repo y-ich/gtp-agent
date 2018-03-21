@@ -41,10 +41,9 @@ function normalizeMove(move) {
 const PS_OPTIONS = process.env.HEROKU_APP_NAME ? ['xl', '--sort', '-rss'] : ['xl', '-m'];
 
 class LeelaClient {
-    constructor(ddp, nth) {
+    constructor(ddp) {
         this.ddp = ddp;
-        this.nth = nth;
-        console.log('LeelaClient nth %d', this.nth);
+        this.nth = null;
         this.records = [];
         this.gtp = null;
         this.sgf = null;
@@ -97,9 +96,15 @@ class LeelaClient {
             }
         ]);
 
-        const handleConstants = this.handleConstants.bind(this);
-        this.constantsObserver = this.ddp.observe('constants', handleConstants, handleConstants);
-        this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
+        await new Promise((res, rej) => {
+            const handleConstants = this.handleConstants.bind(this);
+            this.constantsObserver = this.ddp.observe('constants', id => {
+                this.nth = this.ddp.collections.constants[id].number || 1;
+                console.log('LeelaClient nth %d', this.nth);
+                res();
+            }, handleConstants);
+            this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
+        });
     }
 
     async destroy() {
@@ -264,7 +269,7 @@ if (require.main === module) {
     });
 
     const ddp = new DDPPlus({ url: MIMIAKA_SERVER });
-    const client = new LeelaClient(ddp, parseInt(process.argv[2] || '1'));
+    const client = new LeelaClient(ddp);
     ddp.addListener('connect-success', async function(wasReconnect) {
         if (wasReconnect) {
             await client.destroy();
