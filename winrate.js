@@ -52,7 +52,25 @@ class LeelaClient {
 
     async start() {
         // forecastメソッドのために
-        this.ddp.call('becomeKako', []);
+        await new Promise((res, rej) => {
+            this.ddp.call('becomeKako', [], function(e, r) {
+                if (e) {
+                    rej(e);
+                } else {
+                    res(r);
+                }
+            });
+        });
+
+        await new Promise((res, rej) => {
+            const handleConstants = this.handleConstants.bind(this);
+            this.constantsObserver = this.ddp.observe('constants', id => {
+                this.nth = this.ddp.collections.constants[id].number || 1;
+                console.log('LeelaClient nth %d', this.nth);
+                res();
+            }, handleConstants);
+            this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
+        });
 
         const added = id => {
             this.added(id).catch(function(reason) {
@@ -95,16 +113,6 @@ class LeelaClient {
                 }
             }
         ]);
-
-        await new Promise((res, rej) => {
-            const handleConstants = this.handleConstants.bind(this);
-            this.constantsObserver = this.ddp.observe('constants', id => {
-                this.nth = this.ddp.collections.constants[id].number || 1;
-                console.log('LeelaClient nth %d', this.nth);
-                res();
-            }, handleConstants);
-            this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
-        });
     }
 
     async destroy() {
