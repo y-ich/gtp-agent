@@ -203,7 +203,11 @@ class Agent {
     }
 
     async changed(id, oldFields, clearedFields, newFields) {
-        await this.state.changed(this, this.getRoom(id), oldFields, clearedFields, newFields);
+        try {
+            await this.state.changed(this, this.getRoom(id), oldFields, clearedFields, newFields);
+        } catch (e) {
+            console.log('changed error: ', e);
+        }
     }
 
     setState(state) {
@@ -214,14 +218,8 @@ class Agent {
     }
 
     observeRooms() {
-        console.log('observeRooms');
-        const handler = (id, oldFields, clearedFields, newFields) => {
-            this.changed(id, oldFields, clearedFields, newFields).catch(function (reason) {
-                console.log('behave error', reason);
-            });
-        }
+        const handler = this.changed.bind(this);
         this.roomsObserver = this.ddp.observe('rooms', handler, handler);
-        console.log(this.roomsSelector, this.roomsCursorOptions);
         this.roomsSubscriptionId = this.ddp.subscribe('rooms', [this.roomsSelector, this.roomsCursorOptions]);
     }
 
