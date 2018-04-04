@@ -39,7 +39,7 @@ class ChatAgent extends Agent {
         this.gtp = new GtpLeela2(this);
         const options = process.env.LEELA === 'leelaz' ?
             ['--threads', os.cpus().length] :
-            ['--komiadjust', '--nobook', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+            ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
         await this.gtp.loadSgf(sgf, options);
         await this.gtp.timeSettings(0, this.byoyomi, 1);
     }
