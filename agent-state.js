@@ -209,37 +209,36 @@ class ThinkingState extends AgentState {
         }
         const [root] = jssgf.fastParse(room.game);
         const node = jssgf.nthMoveNode(root, Infinity);
-        const data = await agent.play(room.game);
-        switch (data.result) {
-            case 'PASS':
-            case 'pass': {
-                const next = { _children: [] };
-                next[agent.color] = '';
-                node._children.push(next);
-                this.next = this.WAITING;
-                break;
-            }
-            case 'resign':
-                root.RE = `${jssgf.opponentOf(agent.color)}+R`;
-                this.next = this.STOP;
-                break;
-            default: {
-                if (/[A-Z][0-9]{1,2}/.test(data.result)) {
+        try {
+            const data = await agent.play(room.game);
+            switch (data.result) {
+                case 'PASS':
+                case 'pass': {
                     const next = { _children: [] };
-                    next[agent.color] = coord2move(data.result, agent.size);
+                    next[agent.color] = '';
                     node._children.push(next);
                     this.next = this.WAITING;
-                } else {
-                    console.log('play error', data);
-                    this.next = this.ERROR;
+                    break;
+                }
+                case 'resign':
+                    root.RE = `${jssgf.opponentOf(agent.color)}+R`;
+                    this.next = this.STOP;
+                    break;
+                default: {
+                    if (/[A-Z][0-9]{1,2}/.test(data.result)) {
+                        const next = { _children: [] };
+                        next[agent.color] = coord2move(data.result, agent.size);
+                        node._children.push(next);
+                        this.next = this.WAITING;
+                    } else {
+                        console.log('play error', data);
+                        this.next = this.ERROR;
+                    }
                 }
             }
-        }
-        try {
             await agent.ddp.call('room.updateGame', [agent.roomId, jssgf.stringify([root])]);
         } catch (e) {
             console.log('ThinkingState', e);
-            agent.setState(this.ERROR);
         }
     }
 
