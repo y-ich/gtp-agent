@@ -50,7 +50,6 @@ class Agent {
         this.constantsObserver = this.ddp.observe('constants', this.handleConstants, this.handleConstants);
         this.constantsSubscriptionId = this.ddp.subscribe('constants', [{ category: process.env.HEROKU_APP_NAME }]);
 
-        this.selfObserver = this.ddp.observe('users', undefined, this.userChanged);
         this.selfSubscriptionId = this.ddp.subscribe('users', [{ 'twitter.profile.screen_name': this.screenName }], async () => {
             const ids = Object.keys(this.ddp.collections['users']);
             if (ids.length !== 1) {
@@ -82,9 +81,6 @@ class Agent {
         await this.exitRoom();
         this.setState(this.state.LOBBY);
         this.stopObserveRooms();
-        if (this.selfObserver) {
-            this.selfObserver.stop();
-        }
         this.ddp.unsubscribe(this.selfSubscriptionId);
         this.ddp.unsubscribe(this.constantsSubscriptionId);
     }
