@@ -78,7 +78,7 @@ class Agent {
 
     async stop() {
         console.log('stop');
-        if (!this.selfSubscriptionId) {
+        if (!this.selfSubscriptionId) { // startする前
             return;
         }
         await this.stopGtp();
