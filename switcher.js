@@ -22,7 +22,7 @@ if (require.main === module) {
 
     winrate.onTargetAdded = async function() {
         try {
-            agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
+            await agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
             await agent.stop();
             twiigo.stopRetry();
             twiigo.close();

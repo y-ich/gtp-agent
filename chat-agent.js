@@ -53,7 +53,7 @@ class ChatAgent extends Agent {
                 variations: this.gtp.info.variations
             };
             if (this.gtp.info.variations.length > 0) {
-                this.commentOnMove();
+                await this.commentOnMove();
             }
             await this.ddp.call('updateRooms', [this.roomId, {
                 $push: { kakoHistory: {
@@ -84,7 +84,7 @@ class ChatAgent extends Agent {
         return data;
     }
 
-    commentOnMove() {
+    async commentOnMove() {
         if (this.ponder.variations[0].winRate <= 20) { // 勝勢なら
             console.log('winning');
            return;
@@ -168,7 +168,7 @@ class ChatAgent extends Agent {
             this.wasUnexpected = false;
         }
         if (message) {
-            chat.chat(this.roomId, this.user, message, 'ja');
+            await chat.chat(this.roomId, this.user, message, 'ja');
         }
     }
 
@@ -182,9 +182,9 @@ class ChatAgent extends Agent {
         }
     }
 
-    say(message, lang) {
+    async say(message, lang) {
         if (this.roomId) {
-            chat.chat(this.roomId, this.user, message, lang);
+            await chat.chat(this.roomId, this.user, message, lang);
         }
     }
 }

@@ -78,11 +78,13 @@ class Agent {
 
     async stop() {
         console.log('stop');
+        if (!this.selfSubscriptionId) {
+            return;
+        }
         await this.stopGtp();
         await this.exitRoom();
         this.setState(this.state.LOBBY);
         this.stopObserveRooms();
-        console.log('stop', this.ddp.socket, this.selfSubscriptionId, this.constantsSubscriptionId);
         this.ddp.unsubscribe(this.selfSubscriptionId);
         this.ddp.unsubscribe(this.constantsSubscriptionId);
     }

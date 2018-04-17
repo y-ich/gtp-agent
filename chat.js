@@ -1,5 +1,5 @@
 /* global exports */
-const DDPClient = require('ddp');
+const DDPClient = require('ddp-plus');
 
 const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
     'wss://twiigo.herokuapp.com/websocket' :
@@ -24,21 +24,17 @@ const chat = {
         }
     },
 
-    chat(roomId, user, message, lang) {
+    async chat(roomId, user, message, lang) {
         if (!this.chatServer) {
             console.log('has not connected with chatServer yet', message);
             return;
         }
-        this.chatServer.call('chat', ['twiigo', roomId, null, {
+        await this.chatServer.call('chat', ['twiigo', roomId, null, {
             id: user._id,
             name: user.profile.name,
             lang,
             gender: user.profile.gender
-        }, message], function(error) {
-            if (error) {
-                console.log(error);
-            }
-        });
+        }, message]);
     }
 }
 
