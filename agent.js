@@ -82,7 +82,7 @@ class Agent {
         await this.exitRoom();
         this.setState(this.state.LOBBY);
         this.stopObserveRooms();
-        console.log('stop', this.ddp.socket);
+        console.log('stop', this.ddp.socket, this.selfSubscriptionId, this.constantsSubscriptionId);
         this.ddp.unsubscribe(this.selfSubscriptionId);
         this.ddp.unsubscribe(this.constantsSubscriptionId);
     }
