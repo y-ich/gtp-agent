@@ -21,11 +21,15 @@ if (require.main === module) {
     let winrateBusy = false;
 
     winrate.onTargetAdded = async function() {
-        agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
-        await agent.stop();
-        twiigo.stopRetry();
-        twiigo.close();
-        winrateBusy = true;
+        try {
+            agent.say('急用が入りました。ごめんなさい。失礼します', 'ja');
+            await agent.stop();
+            twiigo.stopRetry();
+            twiigo.close();
+            winrateBusy = true;
+        } catch (e) {
+            console.log(e);
+        }
     }
     winrate.onTargetRemoved = async function() {
         winrateBusy = false;
