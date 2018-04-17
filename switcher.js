@@ -61,6 +61,9 @@ if (require.main === module) {
     });
     mimiaka.connectWithRetry(1000, 60000);
     twiigo.connectWithRetry(1000, 60000, async function() {
+        if (winrateBusy) {
+            return false;
+        }
         const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
         try {
             const Constants = db.collection('constants');
