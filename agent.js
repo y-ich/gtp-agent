@@ -1,7 +1,6 @@
 /* global exports */
 const os = require('os');
 const { execFile } = require('child-process-promise');
-console.log(execFile);
 const { move2coord, GtpClient } = require('gtp-wrapper');
 const { chat } = require('./chat.js');
 const { AgentState } = require('./agent-state.js');
