@@ -121,23 +121,18 @@ class ChatAgent extends Agent {
             const variation = this.ponder.variations[i];
             if (this.ponder.actual === variation.move) {
                 if (variation.rollouts > 0) {
-                    if (this.gtp.info && this.gtp.info.winRate) {
-                        const improvement = this.gtp.info.winRate - variation.winRate;
-                        if (improvement > 20) {
-                            message = 'ええっ';
-                            break;
-                        } else if (improvement > 10) {
-                            message = 'おっ';
-                            break;
-                        } else if (improvement < -20) {
-                            message = 'あいたた';
-                            break;
-                        } else if (improvement < -10) {
-                            message = 'あっ';
-                            break;
-                        }
-                    }
-                    if (variation.winRate > 50) { // 相手が有利
+                    const improvement = (this.gtp.info && this.gtp.info.winRate ?
+                        this.gtp.info.winRate :
+                        this.ponder.variations[0].winRate) - variation.winRate;
+                    if (improvement > 20) {
+                        message = 'ええっ';
+                    } else if (improvement > 10) {
+                        message = 'おっ';
+                    } else if (improvement < -20) {
+                        message = 'あいたた';
+                    } else if (improvement < -10) {
+                        message = 'あっ';
+                    } else if (variation.winRate > 50) { // 相手が有利
                         switch (i) {
                             case 0:
                             message = 'う';
