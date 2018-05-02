@@ -1,6 +1,7 @@
 /* global exports */
 const os = require('os');
-const { coord2move, GtpLeela } = require('gtp-wrapper');
+const jssgf = require('jssgf');
+const { coord2move, GtpLeela, GtpLeelaZero9 } = require('gtp-wrapper');
 const { chat, Agent } = require('./agent.js');
 
 
@@ -24,6 +25,25 @@ class GtpLeela2 extends GtpLeela {
     }
 }
 
+class GtpLeelaZero9_2 extends GtpLeelaZero9 {
+    constructor(agent) {
+        super();
+        this.agent = agent;
+        this.winRate = null;
+    }
+    genmoveStderrHandler(line) {
+        super.genmoveStderrHandler(line);
+        const match = line.match(/^Playouts:\s+([0-9]+), Win:\s+([.0-9]+)%.*, PV:(.+)$/);
+        if (match) {
+            this.winRate = parseFloat(match[2]);
+            this.agent.ddp.call('updateRooms', [
+                this.agent.roomId,
+                { $set: { 'kakoWinRate': this.winRate }}
+            ]);
+            this.agent.checkUnexpected(this.winrate);
+        }
+    }
+}
 
 /**
  * ポンダーAIエージェント
@@ -36,10 +56,15 @@ class ChatAgent extends Agent {
     }
 
     async startGtp(sgf) {
-        this.gtp = new GtpLeela2(this);
-        const options = process.env.LEELA === 'leelaz' ?
-            ['--threads', os.cpus().length] :
-            ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+        const [root] = jssgf.fastParse(sgf);
+        let options;
+        if (root.SZ === '9') {
+            this.gtp = new GtpLeelaZero9_2(this);
+            options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+        } else {
+            this.gtp = new GtpLeela2(this);
+            options = ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+        }
         await this.gtp.loadSgf(sgf, options);
         await this.gtp.timeSettings(0, this.byoyomi, 1);
     }
