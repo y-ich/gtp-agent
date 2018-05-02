@@ -1,5 +1,5 @@
 /* global exports */
-const DDPClient = require('ddp-plus');
+const { DDPPlus } = require('ddp-plus');
 
 const CHAT_SERVER = process.env.NODE_ENV === 'production' ?
     'wss://twiigo.herokuapp.com/websocket' :
@@ -10,7 +10,7 @@ const chat = {
     rooms: new Set(),
     enableChat(roomId) {
         if (!this.chatServer) {
-            this.chatServer = new DDPClient({ url: CHAT_SERVER });
+            this.chatServer = new DDPPlus({ url: CHAT_SERVER });
             this.chatServer.connect();
         }
         this.rooms.add(roomId);
