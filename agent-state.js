@@ -227,7 +227,7 @@ class ThinkingState extends AgentState {
                 default: {
                     if (/[A-Z][0-9]{1,2}/.test(data.result)) {
                         const next = { _children: [] };
-                        next[agent.color] = coord2move(data.result, agent.size);
+                        next[agent.color] = coord2move(data.result, agent.gtp.size);
                         node._children.push(next);
                         this.next = this.WAITING;
                     } else {

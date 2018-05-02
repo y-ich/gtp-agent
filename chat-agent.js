@@ -94,7 +94,7 @@ class ChatAgent extends Agent {
     async play(root, node) {
         const data = await super.play(root, node);
         const log = Object.assign({ num: this.num }, data);
-        log.move = coord2move(data.result, this.size);
+        log.move = coord2move(data.result, this.gtp.size);
         delete log.result;
         data.color = this.color;
         await this.ddp.call('updateRooms', [this.roomId, {

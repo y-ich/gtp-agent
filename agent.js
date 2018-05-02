@@ -21,7 +21,6 @@ class Agent {
         this.gtpName = gtpName;
         this.roomId = null;
         this.state = AgentState.initialState();
-        this.size = 19;
         this.color = null;
         this.byoyomi = byoyomi;
         this.gtp = null;
@@ -150,7 +149,7 @@ class Agent {
         } else {
             return null;
         }
-        return move2coord(move, this.size);
+        return move2coord(move, this.gtp.size);
     }
 
     async opponentPlay(root, node) {
