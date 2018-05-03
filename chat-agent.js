@@ -66,7 +66,7 @@ class ChatAgent extends Agent {
             options = ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
         }
         await this.gtp.loadSgf(sgf, options);
-        await this.gtp.timeSettings(0, this.byoyomi, 1);
+        await this.gtp.timeSettings(0, Math.min(this.byoyomis[root.SZ], this.maxByoyomi), 1);
     }
 
     async opponentPlay(root, node) {

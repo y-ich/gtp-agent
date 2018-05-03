@@ -1,6 +1,7 @@
 /* global exports */
 const os = require('os');
 const { execFile } = require('child-process-promise');
+const jssgf = require('jssgf');
 const { move2coord, GtpClient } = require('gtp-wrapper');
 const { chat } = require('./chat.js');
 const { AgentState } = require('./agent-state.js');
@@ -15,14 +16,19 @@ class Agent {
      * @param {object} selector - Meteor.usersからプレーヤを選択するセレクタ
      * @param {string} methods - DDPサーバ
      */
-    constructor(ddp, screenName, byoyomi = 15, gtpName) {
+    constructor(ddp, screenName, maxByoyomi = 15, gtpName) {
         this.ddp = ddp;
         this.screenName = screenName;
         this.gtpName = gtpName;
         this.roomId = null;
         this.state = AgentState.initialState();
         this.color = null;
-        this.byoyomi = byoyomi;
+        this.byoyomis = {
+            '9': 5,
+            '13': 10,
+            '19': 15
+        };
+        this.maxByoyomi = maxByoyomi;
         this.gtp = null;
         this.stoppingGtp = false;
         this.roomsCursorOptions = { fields: {
@@ -127,17 +133,10 @@ class Agent {
         this.gtp = new GtpClient();
 
         const options = [];
-        /*
-        // サンプルとしてLeela固有コード
         const [root] = jssgf.fastParse(sgf);
 
-        if (root.RU === 'Japanese' || root.KM === '6.5') {
-            options.push('--komiadjust');
-        }
-        */
-
         await this.gtp.loadSgf(sgf, options);
-        await this.gtp.timeSettings(0, this.byoyomi, 1);
+        await this.gtp.timeSettings(0, Math.min(this.byoyomis[root.SZ], this.maxByoyomi), 1);
     }
 
     opponentMove(root, node) {
