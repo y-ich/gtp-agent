@@ -144,6 +144,8 @@ class StartGreetingState extends AgentState {
         this.timedOut(agent);
     }
 
+    async changed() { }
+
     async timedOut(agent) {
         await agent.ddp.call('room.greet', [agent.roomId, 'start']);
         const room = agent.getCurrentRoom();
@@ -256,7 +258,7 @@ class ThinkingState extends AgentState {
 
 class CountingState extends AgentState {
     async exit(agent) {
-        const room = agent.getRoom(agent.roomId);
+        const room = agent.getCurrentRoom();
         if (room.result[0] === jssgf.opponentOf(agent.color)) {
             await chat.chat(agent.roomId, agent.user, '負けました', 'ja');
             await sleep(3000);
