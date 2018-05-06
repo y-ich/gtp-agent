@@ -3,6 +3,7 @@ const jssgf = require('jssgf');
 const { coord2move } = require('gtp-wrapper');
 const { sleep, primaryLastNode } = require('./util.js');
 const { didGreet, isIn } = require('./helpers.js');
+const { chat } = require('./chat.js');
 
 
 function getTurn(sgf) {
@@ -254,7 +255,13 @@ class ThinkingState extends AgentState {
 }
 
 class CountingState extends AgentState {
-
+    async exit(agent) {
+        const room = agent.getRoom(agent.roomId);
+        if (room.result[0] === jssgf.opponentOf(agent.color)) {
+            await chat.chat(agent.roomId, agent.user, '負けました', 'ja');
+            await sleep(3000);
+        }
+    }
 }
 
 class StopState extends AgentState {
