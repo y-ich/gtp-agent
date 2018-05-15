@@ -85,7 +85,7 @@ class ChatAgent extends Agent {
             break;
             case '19':
             this.gtp = new GtpLeelaZero19_2(this);
-            options = ['--threads', Math.min(6, os.cpus().length - 1)]; // 6threadsはメモリ512MBでは足らない模様
+            options = ['--threads', Math.min(parseInt(process.env.MAX_CPUS || '7'), os.cpus().length - 1)];
             break;
             default:
             this.gtp = new GtpLeela2(this);
