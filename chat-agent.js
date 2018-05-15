@@ -78,12 +78,20 @@ class ChatAgent extends Agent {
     async startGtp(sgf) {
         const [root] = jssgf.fastParse(sgf);
         let options;
-        if (root.SZ === '9') {
+        switch (root.SZ) {
+            case '9':
             this.gtp = new GtpLeelaZero9_2(this);
-        } else {
+            options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+            break;
+            case '19':
             this.gtp = new GtpLeelaZero19_2(this);
+            options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+            break;
+            default:
+            this.gtp = new GtpLeela2(this);
+            options = ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
+            break;
         }
-        options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
         await this.gtp.loadSgf(sgf, options);
         await this.gtp.timeSettings(0, Math.min(this.byoyomis[root.SZ], this.maxByoyomi), 1);
     }
