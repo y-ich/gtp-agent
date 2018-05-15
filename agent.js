@@ -207,11 +207,14 @@ class Agent {
         }
     }
 
-    setState(state) {
-        this.state = state;
-        this.state.entry(this).catch(function(reason) {
-            console.log(reason);
-        });
+    async setState(state) {
+        try {
+            await this.state.exit(this);
+            this.state = state;
+            await this.state.entry(this);
+        } catch (e) {
+            console.log(e);
+        }
     }
 
     observeRooms() {
