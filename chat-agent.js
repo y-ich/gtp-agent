@@ -1,7 +1,7 @@
 /* global exports */
 const os = require('os');
 const jssgf = require('jssgf');
-const { coord2move, GtpLeela, GtpLeelaZero9 } = require('gtp-wrapper');
+const { coord2move, GtpLeela, GtpLeelaZero19, GtpLeelaZero9 } = require('gtp-wrapper');
 const { chat, Agent } = require('./agent.js');
 
 
