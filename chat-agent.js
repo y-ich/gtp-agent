@@ -83,10 +83,12 @@ class ChatAgent extends Agent {
             this.gtp = new GtpLeelaZero9_2(this);
             options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
             break;
+            /*
             case '19':
             this.gtp = new GtpLeelaZero19_2(this);
             options = ['--threads', Math.min(parseInt(process.env.MAX_CPUS || '7'), os.cpus().length - 1)];
             break;
+            */
             default:
             this.gtp = new GtpLeela2(this);
             options = ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
