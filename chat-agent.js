@@ -81,7 +81,7 @@ class ChatAgent extends Agent {
         if (root.SZ === '9') {
             this.gtp = new GtpLeelaZero9_2(this);
         } else {
-            this.gtp = new GtpLeela19_2(this);
+            this.gtp = new GtpLeelaZero19_2(this);
         }
         options = ['--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
         await this.gtp.loadSgf(sgf, options);
