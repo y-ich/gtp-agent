@@ -3,7 +3,7 @@
 const os = require('os');
 const { execFile } = require('child-process-promise');
 const jssgf = require('jssgf');
-const { GtpLeela, coord2move } = require('gtp-wrapper');
+const { GtpLeelaZero19, GtpLeela, coord2move } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
 const { primaryLastNode } = require('./util.js');
 
@@ -205,23 +205,26 @@ class LeelaClient {
         const rule = root.RU || (root.KM === '7.5' ? 'Chinese' : 'Japanese');
         const { num, node } = primaryLastNode(root);
         const turn = getTurn(node, root);
-        const options = ['--nobook', '--threads', os.cpus().length - 1];
-        if (rule === 'Japanese') {
-            options.push('--komiadjust');
+        const SelectedGtpLeela = GtpLeela;
+        // const SelectedGtpLeela = GtpLeelaZero19; // LZを使いたいときは上をコメントアウトしてこの行を使う
+        const options = ['--threads', os.cpus().length - 1];
+        if (SelectedGtpLeela === GtpLeela) {
+            options.push('--nobook');
+            if (rule === 'Japanese') {
+                options.push('--komiadjust');
+            }
         }
         let lastForecast = null;
-        const { instance, promise } = GtpLeela.genmoveFrom(this.sgf, BYOYOMI,
-            'gtp', options, 0, line => {
-            const match = line.match(/^Nodes: ([0-9]+), Win: ([.0-9]+)%.*, PV:((?:\s[A-Z][0-9]{1,2})+)/);
-            if (match) {
-                const nodes = parseInt(match[1]);
-                if (record.simulation && record.simulation.num === num && record.simulation.nodes > nodes) {
+        const { instance, promise } = SelectedGtpLeela.genmoveFrom(this.sgf, BYOYOMI, 'gtp', options, 0, line => {
+            const dump = SelectedGtpLeela.parseDump(line);
+            if (dump) {
+                if (record.simulation && record.simulation.num === num && record.simulation.nodes > dump.nodes) {
                     return;
                 }
-                const winrate = Math.max(Math.min(parseFloat(match[2]), 100), 0);
+                const winrate = Math.max(Math.min(dump.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
-                const pv = match[3].trim().split(/\s+/).map(c => coord2move(c, size));
-                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, nodes]);
+                const pv = dump.pv.map(c => coord2move(c, size));
+                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, dump.nodes]);
                 let forecast = pv[0];
                 if (num == 0) {
                     forecast = normalizeMove(forecast);

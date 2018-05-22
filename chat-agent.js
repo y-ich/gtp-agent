@@ -5,23 +5,25 @@ const { coord2move, GtpLeela, GtpLeelaZero19, GtpLeelaZero9 } = require('gtp-wra
 const { chat, Agent } = require('./agent.js');
 
 
+/* mixin */
+function genmoveStderrHandler(line) {
+    super.genmoveStderrHandler(line);
+    const dump = this.constructor.parseDump(line);
+    if (dump) {
+        this.winRate = dump.winrate;
+        this.agent.ddp.call('updateRooms', [
+            this.agent.roomId,
+            { $set: { 'kakoWinRate': this.winRate }}
+        ]);
+        this.agent.checkUnexpected(this.winrate);
+    }
+}
+
 class GtpLeela2 extends GtpLeela {
     constructor(agent) {
         super();
         this.agent = agent;
         this.winRate = null;
-    }
-    genmoveStderrHandler(line) {
-        super.genmoveStderrHandler(line);
-        const match = line.match(/^Nodes:\s+([0-9]+), Win:\s+([.0-9]+)%.*, PV:(.+)$/);
-        if (match) {
-            this.winRate = parseFloat(match[2]);
-            this.agent.ddp.call('updateRooms', [
-                this.agent.roomId,
-                { $set: { 'kakoWinRate': this.winRate }}
-            ]);
-            this.agent.checkUnexpected(this.winrate);
-        }
     }
 }
 
@@ -31,18 +33,6 @@ class GtpLeelaZero9_2 extends GtpLeelaZero9 {
         this.agent = agent;
         this.winRate = null;
     }
-    genmoveStderrHandler(line) {
-        super.genmoveStderrHandler(line);
-        const match = line.match(/^Playouts:\s+([0-9]+), Win:\s+([.0-9]+)%.*, PV:(.+)$/);
-        if (match) {
-            this.winRate = parseFloat(match[2]);
-            this.agent.ddp.call('updateRooms', [
-                this.agent.roomId,
-                { $set: { 'kakoWinRate': this.winRate }}
-            ]);
-            this.agent.checkUnexpected(this.winrate);
-        }
-    }
 }
 
 class GtpLeelaZero19_2 extends GtpLeelaZero19 {
@@ -50,18 +40,6 @@ class GtpLeelaZero19_2 extends GtpLeelaZero19 {
         super();
         this.agent = agent;
         this.winRate = null;
-    }
-    genmoveStderrHandler(line) {
-        super.genmoveStderrHandler(line);
-        const match = line.match(/^Playouts:\s+([0-9]+), Win:\s+([.0-9]+)%.*, PV:(.+)$/);
-        if (match) {
-            this.winRate = parseFloat(match[2]);
-            this.agent.ddp.call('updateRooms', [
-                this.agent.roomId,
-                { $set: { 'kakoWinRate': this.winRate }}
-            ]);
-            this.agent.checkUnexpected(this.winrate);
-        }
     }
 }
 
@@ -94,6 +72,7 @@ class ChatAgent extends Agent {
             options = ['--komiadjust', '--threads', Math.min(7, os.cpus().length - 1)]; // 7threadsはメモリ512MBでは足らない模様
             break;
         }
+        this.gtp.genmoveStderrHandler = genmoveStderrHandler;
         await this.gtp.loadSgf(sgf, options);
         await this.gtp.timeSettings(0, Math.min(this.byoyomis[root.SZ], this.maxByoyomi), 1);
     }
