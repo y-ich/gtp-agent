@@ -5,26 +5,25 @@ const { coord2move, GtpLeela, GtpLeelaZero19, GtpLeelaZero9 } = require('gtp-wra
 const { chat, Agent } = require('./agent.js');
 
 
-/* mixin */
-function genmoveStderrHandler(line) {
-    super.genmoveStderrHandler(line);
-    const dump = this.constructor.parseDump(line);
-    if (dump) {
-        this.winRate = dump.winrate;
-        this.agent.ddp.call('updateRooms', [
-            this.agent.roomId,
-            { $set: { 'kakoWinRate': this.winRate }}
-        ]);
-        this.agent.checkUnexpected(this.winrate);
-    }
-}
-
 class GtpLeela2 extends GtpLeela {
     constructor(agent) {
         super();
         this.agent = agent;
         this.winRate = null;
     }
+
+    genmoveStderrHandler(line) {
+        super.genmoveStderrHandler(line);
+        const dump = this.constructor.parseDump(line);
+        if (dump) {
+            this.winRate = dump.winrate;
+            this.agent.ddp.call('updateRooms', [
+                this.agent.roomId,
+                { $set: { 'kakoWinRate': this.winRate }}
+            ]);
+            this.agent.checkUnexpected(this.winrate);
+        }
+    }    
 }
 
 class GtpLeelaZero9_2 extends GtpLeelaZero9 {
@@ -33,6 +32,19 @@ class GtpLeelaZero9_2 extends GtpLeelaZero9 {
         this.agent = agent;
         this.winRate = null;
     }
+
+    genmoveStderrHandler(line) { // GtpLeela2と同じ。mixinの書き方がわからないので同じコード
+        super.genmoveStderrHandler(line);
+        const dump = this.constructor.parseDump(line);
+        if (dump) {
+            this.winRate = dump.winrate;
+            this.agent.ddp.call('updateRooms', [
+                this.agent.roomId,
+                { $set: { 'kakoWinRate': this.winRate }}
+            ]);
+            this.agent.checkUnexpected(this.winrate);
+        }
+    }    
 }
 
 class GtpLeelaZero19_2 extends GtpLeelaZero19 {
