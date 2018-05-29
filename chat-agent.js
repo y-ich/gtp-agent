@@ -100,13 +100,13 @@ class ChatAgent extends Agent {
             if (this.gtp.info.variations.length > 0) {
                 await this.commentOnMove();
             }
-            await this.ddp.call('updateRooms', [this.roomId, {
+            await this.ddp.call('updateHistories', [this.roomId, {
                 $push: { kakoHistory: {
                     winRate: this.gtp.info.variations[0] && this.gtp.info.variations[0].winRate,
                     ponder: this.gtp.info.variations
                 }}
             }]).catch(function(reason) {
-                console.log('updateRooms reason', reason);
+                console.log('updateHistories reason', reason);
             });
         }
     }
@@ -121,10 +121,14 @@ class ChatAgent extends Agent {
             $set: {
                 kakoWinRate: data.winRate,
                 aiThought: data
-            },
-            $push: { kakoHistory: log }
+            }
         }]).catch(function(reason) {
             console.log('play updateRooms', reason);
+        });
+        await this.ddp.call('updateHistories', [this.roomId, {
+            $push: { kakoHistory: log }
+        }]).catch(function(reason) {
+            console.log('play updateHistories', reason);
         });
         return data;
     }

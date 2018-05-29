@@ -283,6 +283,7 @@ class EndGreetingState extends AgentState {
 
     async timedOut(agent) {
         await agent.ddp.call('room.greet', [agent.roomId, 'end']);
+        agent.ddp.call('copyHistory', [agent.roomId]); // 次に6秒寝るので待たない
         await sleep(6000);
         await agent.exitRoom();
         agent.setState(this.LOBBY);
