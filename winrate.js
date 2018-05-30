@@ -170,7 +170,7 @@ class LeelaClient {
         if (this.records[this.nth - 1] !== target) {
             await this.stopUpdateWinrate();
             if (this.records[this.nth - 1]) {
-                console.log('target changed');
+                console.log('target changed', this.records[this.nth - 1].id);
                 await this.keepUpdateWinrate(this.records[this.nth - 1].id);
             } else if (this.onTargetRemoved) {
                 console.log('target changed');
