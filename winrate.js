@@ -84,7 +84,9 @@ class LeelaClient {
         }
         const updated = id => {
             this.updated(id).catch(function(reason) {
-                console.log('updated error: ', reason);
+                if (reason.signal !== 'SIGINT') {
+                    console.log('updated error: ', reason);
+                }
             });
         };
 
