@@ -140,6 +140,7 @@ class LeelaClient {
             createdAt: this.ddp.collections.records[id].createdAt
         });
         this.records.sort((a, b) => a.createAt - b.createAt);
+        console.log('added', this.records);
         if (target && target !== this.records[this.nth - 1]) { // ターゲットが変わったら
             await this.stopUpdateWinrate();
         }
@@ -156,6 +157,7 @@ class LeelaClient {
         const record = this.records[this.nth - 1];
         if (record && record.id === id) {
             // ここはsimulationが更新される度に呼ばれる
+            console.log('updated', this.records, id);
             await this.keepUpdateWinrate(id);
         }
     }
@@ -169,6 +171,7 @@ class LeelaClient {
         }
         const target = this.records[this.nth - 1];
         this.records.splice(this.records.indexOf(removed), 1);
+        console.log('removed', this.records);
         if (this.records[this.nth - 1] !== target) {
             await this.stopUpdateWinrate();
             if (this.records[this.nth - 1]) {
