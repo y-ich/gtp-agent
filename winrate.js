@@ -207,9 +207,10 @@ class LeelaClient {
         const rule = root.RU || (root.KM === '7.5' ? 'Chinese' : 'Japanese');
         const { num, node } = primaryLastNode(root);
         const turn = getTurn(node, root);
-        const SelectedGtpLeela = GtpLeela;
-        // const SelectedGtpLeela = GtpLeelaZero19; // LZを使いたいときは上をコメントアウトしてこの行を使う
-        const options = ['--threads', os.cpus().length - 1];
+        // const SelectedGtpLeela = GtpLeela;
+        const SelectedGtpLeela = GtpLeelaZero19; // LZを使いたいときは上をコメントアウトしてこの行を使う
+        // const options = ['--threads', os.cpus().length - 1];
+        const options = ['--threads', 1];
         if (SelectedGtpLeela === GtpLeela) {
             options.push('--nobook');
             if (rule === 'Japanese') {
@@ -218,6 +219,7 @@ class LeelaClient {
         }
         let lastForecast = null;
         const { instance, promise } = SelectedGtpLeela.genmoveFrom(this.sgf, BYOYOMI, 'gtp', options, 0, line => {
+            console.log(line);
             const dump = SelectedGtpLeela.parseDump(line);
             if (dump) {
                 if (record.simulation && record.simulation.num === num && record.simulation.nodes > dump.nodes) {
