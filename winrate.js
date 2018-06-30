@@ -3,9 +3,16 @@
 const os = require('os');
 const { execFile } = require('child-process-promise');
 const jssgf = require('jssgf');
-const { GtpLeelaZero19, GtpLeela, coord2move } = require('gtp-wrapper');
+const { GtpLeelaZero, GtpLeela, coord2move } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
 const { primaryLastNode } = require('./util.js');
+
+class GtpLeelaZero19 extends GtpLeelaZero {}
+GtpLeelaZero19.init(
+    '/Users/yuji/OpenSources/go_ai/leela-zero',
+    './leelaz',
+    ['-g', '-w', 'elf_converted_weights.txt']
+);
 
 const BYOYOMI = 57600; // 16時間(5時封じ手から翌朝9時を想定)。free dynoの場合40分程度でmemory quota exceededになる
 const MIMIAKA_SERVER = process.env.NODE_ENV === 'production' ?
@@ -218,17 +225,23 @@ class LeelaClient {
             }
         }
         let lastForecast = null;
-        const { instance, promise } = SelectedGtpLeela.genmoveFrom(this.sgf, BYOYOMI, 'gtp', options, 0, line => {
-            console.log(line);
-            const dump = SelectedGtpLeela.parseDump(line);
-            if (dump) {
-                if (record.simulation && record.simulation.num === num && record.simulation.nodes > dump.nodes) {
+        if (!this.gtp) {
+            this.gtp = new SelectedGtpLeela();
+            this.gtp.start(options, 0);
+        }
+        await this.gtp.loadSgf(this.sgf);
+        await this.gtp.timeSettings(0, BYOYOMI, 1);
+        await this.gtp.lzAnalyze(100, line => {
+            const infos = SelectedGtpLeela.parseInfo(line);
+            if (infos && infos[0]) {
+                const info = infos[0];
+                if (record.simulation && record.simulation.num === num && record.simulation.nodes > info.visits) {
                     return;
                 }
-                const winrate = Math.max(Math.min(dump.winrate, 100), 0);
+                const winrate = Math.max(Math.min(info.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
-                const pv = dump.pv.map(c => coord2move(c, size));
-                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, dump.nodes]);
+                const pv = info.pv.map(c => coord2move(c, size));
+                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, info.visits]);
                 let forecast = pv[0];
                 if (num == 0) {
                     forecast = normalizeMove(forecast);
@@ -238,29 +251,18 @@ class LeelaClient {
                     lastForecast = forecast;
                 }
             } else {
-                console.log('stderr: %s', line);
+                console.log('stdout: %s', line);
             }
-            if (this.memoryQuotaExceeded) {
-                this.stopUpdateWinrate();
+            if (this.memoryQuotaExceeded && this.gtp) {
                 console.log('memory quota exceeded');
+                this.gtp.terminate();
             }
         });
-        this.gtp = instance;
-        const data = await promise;
-        let forecast = coord2move(data.result, size);
-        if (num == 0) {
-            forecast = normalizeMove(forecast);
-        }
-        if (forecast !== lastForecast) {
-            this.ddp.call('forecast', [id, num, forecast, true]);
-            lastForecast = forecast;
-        }
     }
 
     async stopUpdateWinrate() {
         if (this.gtp) {
-            await this.gtp.terminate();
-            this.gtp = null;
+            await this.gtp.name();
         }
     }
 
