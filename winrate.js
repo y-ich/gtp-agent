@@ -1,9 +1,8 @@
 #!/usr/bin/env node
 /* global module exports */
-const os = require('os');
 const { execFile } = require('child-process-promise');
 const jssgf = require('jssgf');
-const { GtpLeelaZero, GtpLeela, coord2move } = require('gtp-wrapper');
+const { GtpLeelaZero, coord2move, move2coord } = require('gtp-wrapper');
 const { DDPPlus } = require('ddp-plus');
 const { primaryLastNode } = require('./util.js');
 
@@ -13,6 +12,38 @@ GtpLeelaZero19.init(
     './leelaz',
     ['-g', '-w', 'elf_converted_weights.txt']
 );
+
+function continuingNode(prev, next) {
+    function equalNode(a, b) {
+        // TODO: 配列プロパティに対応する
+        for (const k in a) {
+            if (k === '_children') {
+                continue;
+            }
+            if (a[k] !== b[k]) {
+                return false;
+            }
+        }
+        return true;
+    }
+    try {
+        let [pNode] = jssgf.fastParse(prev);
+        let [nNode] = jssgf.fastParse(next);
+        if (!equalNode(pNode, nNode)) {
+            return null;
+        }
+        while (pNode._children.length > 0) {
+            pNode = pNode._children[0];
+            nNode = nNode._children[0];
+            if (!equalNode(pNode, nNode)) {
+                return null;
+            }
+        }
+        return nNode._children[0];
+    } catch (e) {
+        return null;
+    }
+}
 
 const BYOYOMI = 57600; // 16時間(5時封じ手から翌朝9時を想定)。free dynoの場合40分程度でmemory quota exceededになる
 const MIMIAKA_SERVER = process.env.NODE_ENV === 'production' ?
@@ -54,6 +85,8 @@ class LeelaClient {
         this.records = [];
         this.gtp = null;
         this.sgf = null;
+        this.size = 19;
+        this.num = 0;
         this.memoryQuotaExceeded = false;
     }
 
@@ -81,18 +114,19 @@ class LeelaClient {
 
         const added = id => {
             this.added(id).catch(function(reason) {
-                console.log('added error: ', reason);
+                console.error('added error: ', reason);
             });
         }
         const removed = id => {
             this.removed(id).catch(function(reason) {
-                console.log('removed error: ', reason);
+                console.error('removed error: ', reason);
             });
         }
         const updated = id => {
             this.updated(id).catch(function(reason) {
                 if (reason.signal !== 'SIGINT') {
-                    console.log('updated error: ', reason);
+                    console.error('updated error: ', reason);
+                    console.log(this.sgf);
                 }
             });
         };
@@ -143,7 +177,6 @@ class LeelaClient {
     async added(id) {
         const target = this.records[this.nth - 1];
         if (this.records.filter(e => e.id === id).length === 0) {
-            console.log('added', this.records);
             this.records.push({
                 id,
                 createdAt: this.ddp.collections.records[id].createdAt
@@ -156,9 +189,10 @@ class LeelaClient {
                 if (this.onTargetAdded) {
                     await this.onTargetAdded();
                 }
-                console.log('added', id, this.records)
                 await this.keepUpdateWinrate(id);
             }
+        } else {
+            console.log('added twice', id);
         }
     }
 
@@ -166,7 +200,6 @@ class LeelaClient {
         const record = this.records[this.nth - 1];
         if (record && record.id === id) {
             // ここはsimulationが更新される度に呼ばれる
-            console.log('updated', this.records, id);
             await this.keepUpdateWinrate(id);
         }
     }
@@ -213,54 +246,73 @@ class LeelaClient {
             this.memoryQuotaExceeded = false;
         }
 
+        let cNode = continuingNode(this.sgf, record.sgf);
         this.sgf = record.sgf;
-        const [root] = jssgf.fastParse(this.sgf);
-        const size = parseInt(root.SZ || '19');
-        const rule = root.RU || (root.KM === '7.5' ? 'Chinese' : 'Japanese');
-        const { num, node } = primaryLastNode(root);
-        const turn = getTurn(node, root);
-        // const SelectedGtpLeela = GtpLeela;
-        const SelectedGtpLeela = GtpLeelaZero19; // LZを使いたいときは上をコメントアウトしてこの行を使う
-        // const options = ['--threads', os.cpus().length - 1];
-        const options = ['--threads', 1];
-        if (SelectedGtpLeela === GtpLeela) {
-            options.push('--nobook');
-            if (rule === 'Japanese') {
-                options.push('--komiadjust');
+        let turn;
+        if (cNode) {
+            try {
+                while (true) {
+                    if (cNode.B) {
+                        this.gtp.play(move2coord(cNode.B, this.size));
+                        turn = 'W';
+                        this.num += 1;
+                    } else if (cNode.W) {
+                        this.gtp.play(move2coord(cNode.W, this.size));
+                        turn = 'B';
+                        this.num += 1;
+                    }
+                    if (cNode._children.length === 0) {
+                        break;
+                    }
+                    cNode = cNode._children[0];
+                }
+            } catch (e) {
+                console.error(e);
+                cNode = null;
             }
         }
-        let lastForecast = null;
-        if (!this.gtp) {
-            this.gtp = new SelectedGtpLeela();
-            this.gtp.start(options, 0);
+        if (!cNode) {
+            const [root] = jssgf.fastParse(this.sgf);
+            this.size = parseInt(root.SZ || '19');
+            const lastNode = primaryLastNode(root);
+            this.num = lastNode.num;
+            const node = lastNode.node;
+            turn = getTurn(node, root);
+            const options = ['--threads', 1];
+            if (!this.gtp) {
+                this.gtp = new GtpLeelaZero19();
+                this.gtp.start(options, 0);
+            }
+            await this.gtp.loadSgf(this.sgf);
+            await this.gtp.timeSettings(0, BYOYOMI, 1);
         }
-        await this.gtp.loadSgf(this.sgf);
-        await this.gtp.timeSettings(0, BYOYOMI, 1);
+        let lastForecast = null;
         await this.gtp.lzAnalyze(100, line => {
-            const infos = SelectedGtpLeela.parseInfo(line);
+            const infos = GtpLeelaZero19.parseInfo(line);
             if (infos && infos[0]) {
                 const info = infos[0];
-                if (record.simulation && record.simulation.num === num && record.simulation.nodes > info.visits) {
+                if (record.simulation && record.simulation.num === this.num && record.simulation.nodes > info.visits) {
                     return;
                 }
                 const winrate = Math.max(Math.min(info.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
-                const pv = info.pv.map(c => coord2move(c, size));
-                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, info.visits]);
+                const pv = info.pv.map(c => coord2move(c, this.size));
+                this.ddp.call('updateWinrate', [id, this.num, blackWinrate, pv, info.visits]);
                 let forecast = pv[0];
-                if (num == 0) {
+                if (this.num == 0) {
                     forecast = normalizeMove(forecast);
                 }
                 if (forecast !== lastForecast) {
-                    this.ddp.call('forecast', [id, num, forecast, true]);
+                    this.ddp.call('forecast', [id, this.num, forecast, true]);
                     lastForecast = forecast;
                 }
             } else {
-                console.log('stdout: %s', line);
+                console.log('parseInfo', line);
             }
             if (this.memoryQuotaExceeded && this.gtp) {
                 console.log('memory quota exceeded');
                 this.gtp.terminate();
+                this.gtp = null;
             }
         });
     }
