@@ -142,20 +142,23 @@ class LeelaClient {
 
     async added(id) {
         const target = this.records[this.nth - 1];
-        this.records.push({
-            id,
-            createdAt: this.ddp.collections.records[id].createdAt
-        });
-        this.records.sort((a, b) => a.createAt - b.createAt);
-        if (target && target !== this.records[this.nth - 1]) { // ターゲットが変わったら
-            await this.stopUpdateWinrate();
-        }
-        if (this.records[this.nth - 1] && this.records[this.nth - 1].id === id) {
-            if (this.onTargetAdded) {
-                await this.onTargetAdded();
+        if (this.records.filter(e => e.id === id).length === 0) {
+            console.log('added', this.records);
+            this.records.push({
+                id,
+                createdAt: this.ddp.collections.records[id].createdAt
+            });
+            this.records.sort((a, b) => a.createAt - b.createAt);
+            if (target && target !== this.records[this.nth - 1]) { // ターゲットが変わったら
+                await this.stopUpdateWinrate();
             }
-            console.log('added', id, this.records)
-            await this.keepUpdateWinrate(id);
+            if (this.records[this.nth - 1] && this.records[this.nth - 1].id === id) {
+                if (this.onTargetAdded) {
+                    await this.onTargetAdded();
+                }
+                console.log('added', id, this.records)
+                await this.keepUpdateWinrate(id);
+            }
         }
     }
 
@@ -163,6 +166,7 @@ class LeelaClient {
         const record = this.records[this.nth - 1];
         if (record && record.id === id) {
             // ここはsimulationが更新される度に呼ばれる
+            console.log('updated', this.records, id);
             await this.keepUpdateWinrate(id);
         }
     }
@@ -176,6 +180,7 @@ class LeelaClient {
         }
         const target = this.records[this.nth - 1];
         this.records.splice(this.records.indexOf(removed), 1);
+        console.log('removed', this.records);
         if (this.records[this.nth - 1] !== target) {
             await this.stopUpdateWinrate();
             if (this.records[this.nth - 1]) {
@@ -288,12 +293,14 @@ if (require.main === module) {
     const ddp = new DDPPlus({ url: MIMIAKA_SERVER });
     const client = new LeelaClient(ddp);
     ddp.addListener('connect-success', async function(wasReconnect) {
+        console.log('connect-success');
         if (wasReconnect) {
             await client.destroy();
         }
         client.start();
     });
     ddp.addListener('socket-close', async function(code, reason) {
+        console.log('socket-close');
         await client.destroy();
     });
     ddp.connectWithRetry(1000, 60000);
