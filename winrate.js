@@ -10,7 +10,7 @@ class GtpLeelaZero19 extends GtpLeelaZero {}
 GtpLeelaZero19.init(
     '/Users/yuji/OpenSources/go_ai/leela-zero',
     './leelaz',
-    ['-g', '-w', 'elf_converted_weights.txt']
+    ['-g', '-w', 'elf_converted_weights.txt.gz']
 );
 
 function continuingNode(prev, next) {
