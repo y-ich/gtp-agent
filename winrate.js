@@ -290,14 +290,18 @@ class LeelaClient {
         await this.gtp.lzAnalyze(100, line => {
             const infos = GtpLeelaZero19.parseInfo(line);
             if (infos && infos[0]) {
+                infos.forEach(e => {
+                    e.pv = e.pv.map(c => coord2move(c, this.size));
+                });
                 const info = infos[0];
                 if (record.simulation && record.simulation.num === this.num && record.simulation.nodes > info.visits) {
                     return;
                 }
                 const winrate = Math.max(Math.min(info.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
-                const pv = info.pv.map(c => coord2move(c, this.size));
-                this.ddp.call('updateWinrate', [id, this.num, blackWinrate, pv, info.visits]);
+                const winrates = infos.map(e => [e.pv[0], Math.max(Math.min(e.winrate, 100), 0)]);
+                const pv = info.pv;
+                this.ddp.call('updateWinrate', [id, this.num, blackWinrate, pv, info.visits, winrates]);
                 let forecast = pv[0];
                 if (this.num == 0) {
                     forecast = normalizeMove(forecast);
