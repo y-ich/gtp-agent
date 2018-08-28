@@ -299,9 +299,9 @@ class LeelaClient {
                 }
                 const winrate = Math.max(Math.min(info.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
-                const winrates = infos.map(e => [e.pv[0], Math.max(Math.min(e.winrate, 100), 0)]);
+                const candidates = infos.map(e => [e.pv[0], Math.max(Math.min(e.winrate, 100), 0)]);
                 const pv = info.pv;
-                this.ddp.call('updateWinrate', [id, this.num, blackWinrate, pv, info.visits, winrates]);
+                this.ddp.call('updateWinrate', [id, this.num, blackWinrate, pv, info.visits, candidates]);
                 let forecast = pv[0];
                 if (this.num == 0) {
                     forecast = normalizeMove(forecast);
