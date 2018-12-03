@@ -53,7 +53,7 @@ class LeelaClient {
     async start() {
         // forecastメソッドのために
         await new Promise((res, rej) => {
-            this.ddp.call('becomeKako', [], function(e, r) {
+            this.ddp.call('become', ['twiigo2015', '/live-games'], function(e, r) {
                 if (e) {
                     rej(e);
                 } else {
