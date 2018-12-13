@@ -159,7 +159,6 @@ class LeelaClient {
         const record = this.records[this.nth - 1];
         if (record && record.id === id) {
             // ここはsimulationが更新される度に呼ばれる
-            console.log('updated', this.records, id);
             await this.keepUpdateWinrate(id);
         }
     }
