@@ -230,7 +230,9 @@ class LeelaClient {
                 const winrate = Math.max(Math.min(dump.winrate, 100), 0);
                 const blackWinrate = turn === 'B' ? winrate : 100 - winrate;
                 const pv = dump.pv.map(c => coord2move(c, size));
-                this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, dump.nodes]);
+                if (this.nth >= 2) {
+                    this.ddp.call('updateWinrate', [id, num, blackWinrate, pv, dump.nodes]);
+                }
                 let forecast = pv[0];
                 if (num == 0) {
                     forecast = normalizeMove(forecast);
