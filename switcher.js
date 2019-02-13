@@ -36,47 +36,67 @@ if (require.main === module) {
         twiigo.connectWithRetry(1000, 60000);
     }
     mimiaka.addListener('connect-success', async function(wasReconnect) {
-        if (wasReconnect) {
-            await winrate.destroy();
+        try {
+            if (wasReconnect) {
+                await winrate.destroy();
+            }
+            await winrate.start();
+        } catch (e) {
+            console.log(e);
         }
-        await winrate.start();
     });
     mimiaka.addListener('socket-close', async function(code, reason) {
-        await winrate.destroy();
+        try {
+            await winrate.destroy();
+        } catch (e) {
+            console.log(e);
+        }
     });
 
     twiigo.addListener('connect-success', async function(wasReconnect) {
-        if (wasReconnect) {
-            await agent.stop();
-        }
-        if (!winrateBusy) {
-            agent.start();
+        try {
+            if (wasReconnect) {
+                await agent.stop();
+            }
+            if (!winrateBusy) {
+                agent.start();
+            }
+        } catch (e) {
+            console.log(e);
         }
     });
 
     twiigo.addListener('socket-close', async function(code, reason) {
-        await agent.stop();
-        twiigo.close();
-        twiigo.connectWithRetry();
+        try {
+            await agent.stop();
+            twiigo.close();
+            twiigo.connectWithRetry();
+        } catch (e) {
+            console.log(e);
+        }
     });
     mimiaka.connectWithRetry(1000, 60000);
     twiigo.connectWithRetry(1000, 60000, async function() {
-        if (winrateBusy) {
-            return false;
-        }
-        const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
         try {
-            const Constants = db.collection('constants');
-            if (!Constants) {
+            if (winrateBusy) {
                 return false;
             }
-            const item = await Constants.findOne({ category: 'heroku-state' });
-            console.log('connectWithRetry', item);
-            return item == null || !item.sleep;
+            const db = await MongoClient.connect(process.env.TWIIGO_MONGO_URL);
+            try {
+                const Constants = db.collection('constants');
+                if (!Constants) {
+                    return false;
+                }
+                const item = await Constants.findOne({ category: 'heroku-state' });
+                console.log('connectWithRetry', item);
+                return item == null || !item.sleep;
+            } catch (e) {
+                return false;
+            } finally {
+                db.close();
+            }
         } catch (e) {
-            return false;
-        } finally {
-            db.close();
+            console.log(e);
         }
     });
 }
