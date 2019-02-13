@@ -39,7 +39,7 @@ if (require.main === module) {
         if (wasReconnect) {
             await winrate.destroy();
         }
-        winrate.start();
+        await winrate.start();
     });
     mimiaka.addListener('socket-close', async function(code, reason) {
         await winrate.destroy();
