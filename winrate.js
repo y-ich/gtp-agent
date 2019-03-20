@@ -107,7 +107,6 @@ class LeelaClient {
             },
             {
                 sort: { createdAt: 1 },
-                limit: this.nth,
                 fields: {
                     sgf: 1,
                     simulation: 1,
@@ -269,6 +268,11 @@ class LeelaClient {
     }
 
     async handleConstants(id) {
+        if (this.nth !== (this.ddp.collections.constants[id].number || 1)) {
+            await this.stopUpdateWinrate();
+            this.nth = this.ddp.collections.constants[id].number || 1;
+            await this.keepUpdateWinrate(this.records[this.nth - 1].id);
+        }
         this.memoryQuotaExceeded = this.ddp.collections.constants[id].memoryQuotaExceeded;
         if (this.memoryQuotaExceeded) {
             console.log('handleConstants: %s, %s', id, this.memoryQuotaExceeded);
