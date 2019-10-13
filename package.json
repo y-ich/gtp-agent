@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "child-process-promise": "^2.2.1",
-    "ddp-plus": "^0.0.5",
+    "ddp-plus": "^0.0.6",
     "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
     "jssgf": "^0.3.8",
     "mongodb": "^2.2.36",
