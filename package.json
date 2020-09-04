@@ -12,7 +12,7 @@
     "ddp-plus": "^0.0.6",
     "gtp-wrapper": "github:y-ich/gtp-wrapper#leela-binaries",
     "jssgf": "^0.3.8",
-    "mongodb": "^2.2.36",
+    "mongodb": "^3.1.13",
     "sleep-promise": "^2.0.0"
   },
   "devDependencies": {},
